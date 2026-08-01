@@ -5,21 +5,25 @@
 <title>Sign in — PlateIQ</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#1a1a1a;--muted:#6b6b6b;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-p:#fef3dc;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
+:root{--ink:#1a1a1a;--muted:#6b6b6b;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-p:#fef3dc;--green:#16a34a;--green-p:#f0fdf4;--red:#dc2626;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
-.card{background:var(--card);border:1px solid var(--border-m);border-radius:18px;padding:36px;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
-.brand{font-family:var(--serif);font-size:22px;text-align:center;margin-bottom:24px;color:var(--ink);}
+.card{background:var(--card);border:1px solid var(--border-m);border-radius:18px;padding:36px;width:100%;max-width:440px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.brand{font-family:var(--serif);font-size:22px;text-align:center;margin-bottom:28px;color:var(--ink);}
 .brand span{color:var(--amber);}
-h2{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:4px;}
-p{font-size:13.5px;color:var(--muted);margin-bottom:24px;}
-.f-group{margin-bottom:14px;}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:var(--r);padding:3px;margin-bottom:24px;}
+.tab{font-family:var(--sans);font-size:13.5px;font-weight:600;padding:9px;border:none;background:transparent;border-radius:8px;cursor:pointer;color:var(--muted);transition:all .15s;}
+.tab.active{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+h2{font-family:var(--serif);font-size:20px;color:var(--ink);margin-bottom:4px;}
+.sub{font-size:13.5px;color:var(--muted);margin-bottom:22px;}
+.f-group{margin-bottom:13px;}
 .f-group label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;}
-.f-group input{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r);padding:12px 14px;outline:none;width:100%;}
+.f-group input{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r);padding:11px 14px;outline:none;width:100%;transition:border-color .15s;}
 .f-group input:focus{border-color:var(--amber);background:#fff;}
-.btn{width:100%;font-family:var(--serif);font-size:16px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:14px;cursor:pointer;margin-top:6px;}
+.btn{width:100%;font-family:var(--serif);font-size:16px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:13px;cursor:pointer;margin-top:4px;}
 .btn:hover{background:#2a2a2a;}
-.err{font-size:13px;color:#dc2626;margin-top:8px;display:none;text-align:center;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.err{font-size:13px;color:var(--red);margin-top:8px;text-align:center;display:none;}
 .link{font-size:13px;color:var(--muted);text-align:center;margin-top:14px;}
 .link a{color:var(--amber);font-weight:600;text-decoration:none;}
 </style>
@@ -27,36 +31,98 @@ p{font-size:13.5px;color:var(--muted);margin-bottom:24px;}
 <body>
 <div class="card">
   <div class="brand">Plate<span>IQ</span></div>
-  <h2>Sign in</h2>
-  <p>Access your restaurant reports and dashboard.</p>
-  <div class="f-group"><label>Email</label><input type="email" id="email" placeholder="your@email.com"></div>
-  <div class="f-group"><label>Password</label><input type="password" id="pwd" placeholder="Your password"></div>
-  <button class="btn" onclick="login()" id="btn">Sign in →</button>
-  <div class="err" id="err"></div>
-  <div class="link">Don't have an account? <a href="/">Get a free audit</a></div>
+  <div class="tabs">
+    <button class="tab" id="tab-signin" onclick="showTab('signin')">Sign in</button>
+    <button class="tab" id="tab-register" onclick="showTab('register')">Create account</button>
+  </div>
+
+  <!-- Sign in -->
+  <div id="pane-signin">
+    <h2>Welcome back</h2>
+    <p class="sub">Access your restaurant dashboard.</p>
+    <div class="f-group"><label>Email</label><input type="email" id="si-email" placeholder="you@restaurant.com"></div>
+    <div class="f-group"><label>Password</label><input type="password" id="si-pwd" placeholder="Your password"></div>
+    <button class="btn" id="si-btn" onclick="signIn()">Sign in →</button>
+    <div class="err" id="si-err"></div>
+    <div class="link">New to PlateIQ? <a href="/" onclick="showTab('register');return false;">Get started</a></div>
+  </div>
+
+  <!-- Register -->
+  <div id="pane-register" style="display:none;">
+    <h2>Create your account</h2>
+    <p class="sub">You’ll be taken to select your plan after signing up.</p>
+    <div class="f-group"><label>Email</label><input type="email" id="re-email" placeholder="you@restaurant.com"></div>
+    <div class="f-group"><label>Password</label><input type="password" id="re-pwd" placeholder="At least 6 characters"></div>
+    <div class="f-group"><label>Confirm password</label><input type="password" id="re-pwd2" placeholder="Repeat password"></div>
+    <button class="btn" id="re-btn" onclick="register()">Create account →</button>
+    <div class="err" id="re-err"></div>
+    <div class="link">Already have an account? <a href="#" onclick="showTab('signin');return false;">Sign in</a></div>
+  </div>
 </div>
+
 <script>
-async function login() {
-  var email=document.getElementById('email').value.trim();
-  var pwd=document.getElementById('pwd').value;
-  var err=document.getElementById('err');
+function showTab(t) {
+  document.getElementById('pane-signin').style.display   = t==='signin'   ? 'block' : 'none';
+  document.getElementById('pane-register').style.display = t==='register' ? 'block' : 'none';
+  document.getElementById('tab-signin').classList.toggle('active',   t==='signin');
+  document.getElementById('tab-register').classList.toggle('active', t==='register');
+}
+
+// Check URL params
+var params = new URLSearchParams(location.search);
+var mode   = params.get('mode');
+var emailP = params.get('email');
+showTab(mode==='register' ? 'register' : 'signin');
+if (emailP) {
+  document.getElementById('re-email').value = emailP;
+  document.getElementById('si-email').value = emailP;
+}
+
+// Pre-fill from localStorage interest
+try {
+  var interest = JSON.parse(localStorage.getItem('piq_interest') || 'null');
+  if (interest && interest.email && !emailP) {
+    document.getElementById('re-email').value = interest.email;
+  }
+} catch(e) {}
+
+async function signIn() {
+  var email=document.getElementById('si-email').value.trim();
+  var pwd=document.getElementById('si-pwd').value;
+  var err=document.getElementById('si-err');
   err.style.display='none';
   if(!email||!pwd){err.textContent='Please fill in all fields.';err.style.display='block';return;}
-  document.getElementById('btn').textContent='Signing in...';
-  document.getElementById('btn').disabled=true;
+  var btn=document.getElementById('si-btn');btn.disabled=true;btn.textContent='Signing in...';
   try {
     var res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pwd})});
     var d=await res.json();
     if(!d.ok)throw new Error(d.error);
     localStorage.setItem('piq_token',d.token);
     localStorage.setItem('piq_email',email);
-    window.location.href='/dashboard';
-  } catch(e){
-    err.textContent=e.message||'Login failed.';err.style.display='block';
-    document.getElementById('btn').textContent='Sign in →';document.getElementById('btn').disabled=false;
-  }
+    window.location.href = (d.plan && d.plan!=='none') ? '/dashboard' : '/onboarding';
+  } catch(e){err.textContent=e.message||'Login failed.';err.style.display='block';btn.disabled=false;btn.textContent='Sign in →';}
 }
-document.addEventListener('keydown',function(e){if(e.key==='Enter')login();});
+
+async function register() {
+  var email=document.getElementById('re-email').value.trim();
+  var pwd=document.getElementById('re-pwd').value;
+  var pwd2=document.getElementById('re-pwd2').value;
+  var err=document.getElementById('re-err');
+  err.style.display='none';
+  if(!email||!pwd){err.textContent='Please fill in all fields.';err.style.display='block';return;}
+  if(pwd.length<6){err.textContent='Password must be at least 6 characters.';err.style.display='block';return;}
+  if(pwd!==pwd2){err.textContent='Passwords do not match.';err.style.display='block';return;}
+  var btn=document.getElementById('re-btn');btn.disabled=true;btn.textContent='Creating account...';
+  try {
+    var res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pwd})});
+    var d=await res.json();
+    if(!d.ok)throw new Error(d.error);
+    localStorage.setItem('piq_token',d.token);
+    localStorage.setItem('piq_email',email);
+    window.location.href='/onboarding';
+  } catch(e){err.textContent=e.message||'Could not create account.';err.style.display='block';btn.disabled=false;btn.textContent='Create account →';}
+}
+document.addEventListener('keydown',function(e){if(e.key==='Enter'){var t=document.getElementById('pane-signin').style.display!=='none'?'signin':'register';t==='signin'?signIn():register();}});
 </script>
 </body>
 </html>
