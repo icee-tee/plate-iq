@@ -1,33 +1,55 @@
 'use strict';
-const express    = require('express');
-const path       = require('path');
-const { Pool }   = require('pg');
-const bcrypt     = require('bcryptjs');
+const express      = require('express');
+const path         = require('path');
+const { Pool }     = require('pg');
+const bcrypt       = require('bcryptjs');
 const { v4: uuid } = require('uuid');
-const Anthropic  = require('@anthropic-ai/sdk');
+const Anthropic    = require('@anthropic-ai/sdk');
+const nodemailer   = require('nodemailer');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 const BASE = process.env.BASE_URL || `http://localhost:${PORT}`;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'plateiq-admin-2026';
+
+// ── Clients ───────────────────────────────────────────────────────────────────
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  : null;
+
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
+
+const mailer = (process.env.SMTP_HOST && process.env.SMTP_USER)
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT)||587,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    })
+  : null;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+// Stripe webhook needs raw body — register before express.json
+app.post('/webhook/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
 app.use(express.json({ limit: '4mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── DB ────────────────────────────────────────────────────────────────────────
-const pgPool = process.env.DATABASE_URL ? new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-}) : null;
+const pgPool = process.env.DATABASE_URL
+  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  : null;
 
 async function initDb() {
-  if (!pgPool) return console.warn('⚠ No DATABASE_URL — data will not persist');
+  if (!pgPool) return console.warn('⚠  No DATABASE_URL');
   await pgPool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      email        TEXT PRIMARY KEY,
-      password_hash TEXT NOT NULL,
-      plan         TEXT DEFAULT 'free',
-      created_at   TIMESTAMPTZ DEFAULT NOW()
+      email              TEXT PRIMARY KEY,
+      password_hash      TEXT NOT NULL,
+      plan               TEXT DEFAULT 'none',
+      stripe_customer_id TEXT,
+      stripe_sub_id      TEXT,
+      plan_status        TEXT DEFAULT 'inactive',
+      created_at         TIMESTAMPTZ DEFAULT NOW()
     )
   `);
   await pgPool.query(`
@@ -38,16 +60,51 @@ async function initDb() {
     )
   `);
   await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS restaurants (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_email  TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+      name        TEXT NOT NULL,
+      postcode    TEXT,
+      cuisine     TEXT,
+      platforms   TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS credentials (
+      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+      platform      TEXT NOT NULL,
+      login_email   TEXT,
+      login_password TEXT,
+      notes         TEXT,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS weekly_data (
+      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+      week_ending   DATE NOT NULL,
+      orders        INTEGER,
+      revenue       NUMERIC(10,2),
+      aov           NUMERIC(8,2),
+      rating        NUMERIC(3,2),
+      new_reviews   INTEGER,
+      notes         TEXT,
+      created_at    TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(restaurant_id, week_ending)
+    )
+  `);
+  await pgPool.query(`
     CREATE TABLE IF NOT EXISTS reports (
       id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_email    TEXT,
-      restaurant_name TEXT,
-      city          TEXT,
-      cuisine       TEXT,
-      platforms     TEXT,
-      restaurant_url TEXT,
-      report_data   JSONB,
-      created_at    TIMESTAMPTZ DEFAULT NOW()
+      restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+      week_ending   DATE NOT NULL,
+      report_data   JSONB NOT NULL,
+      emailed_at    TIMESTAMPTZ,
+      created_at    TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(restaurant_id, week_ending)
     )
   `);
   console.log('✅ DB ready');
@@ -60,7 +117,6 @@ async function findUser(email) {
   const r = await pgPool.query('SELECT * FROM users WHERE email=$1', [email.toLowerCase()]);
   return r.rows[0] || null;
 }
-
 async function createUser(email, password) {
   if (!pgPool) return null;
   const hash = await bcrypt.hash(password, 10);
@@ -70,261 +126,231 @@ async function createUser(email, password) {
   );
   return findUser(email);
 }
-
 async function createSession(email) {
   if (!pgPool) return uuid();
   const token = uuid();
-  const exp   = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  await pgPool.query(
-    'INSERT INTO sessions (token, email, expires_at) VALUES ($1,$2,$3)',
-    [token, email.toLowerCase(), exp]
-  );
+  const exp = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  await pgPool.query('INSERT INTO sessions (token, email, expires_at) VALUES ($1,$2,$3)', [token, email.toLowerCase(), exp]);
   return token;
 }
-
 async function getSession(token) {
   if (!token || !pgPool) return null;
-  const r = await pgPool.query(
-    'SELECT * FROM sessions WHERE token=$1 AND expires_at > NOW()',
-    [token]
-  );
+  const r = await pgPool.query('SELECT * FROM sessions WHERE token=$1 AND expires_at > NOW()', [token]);
   return r.rows[0] || null;
 }
-
-async function saveReport(email, data) {
-  if (!pgPool) return null;
-  const r = await pgPool.query(
-    `INSERT INTO reports (user_email, restaurant_name, city, cuisine, platforms, restaurant_url, report_data)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
-    [email?.toLowerCase() || null, data.restaurantName, data.city, data.cuisine,
-     data.platforms, data.url, JSON.stringify(data.report)]
-  );
-  return r.rows[0]?.id;
+async function requireAuth(req, res, next) {
+  const sess = await getSession(req.headers['x-session-token']);
+  if (!sess) return res.status(401).json({ ok: false, error: 'Not logged in.' });
+  req.userEmail = sess.email;
+  const user = await findUser(sess.email);
+  req.user = user;
+  next();
+}
+function requireAdmin(req, res, next) {
+  const pw = req.headers['x-admin-password'] || req.query.pw;
+  if (pw !== ADMIN_PASSWORD) return res.status(401).json({ ok: false, error: 'Unauthorized.' });
+  next();
 }
 
-async function getUserReports(email) {
+// ── Restaurant helpers ────────────────────────────────────────────────────────
+async function getUserRestaurant(email) {
+  if (!pgPool) return null;
+  const r = await pgPool.query('SELECT * FROM restaurants WHERE user_email=$1 LIMIT 1', [email]);
+  return r.rows[0] || null;
+}
+async function getRestaurantHistory(restaurantId) {
   if (!pgPool) return [];
   const r = await pgPool.query(
-    'SELECT id, restaurant_name, city, created_at, report_data FROM reports WHERE user_email=$1 ORDER BY created_at DESC',
-    [email.toLowerCase()]
+    `SELECT wd.*, rep.report_data FROM weekly_data wd
+     LEFT JOIN reports rep ON rep.restaurant_id=wd.restaurant_id AND rep.week_ending=wd.week_ending
+     WHERE wd.restaurant_id=$1 ORDER BY wd.week_ending DESC LIMIT 20`,
+    [restaurantId]
   );
   return r.rows;
 }
 
-// ── Homepage fetch ────────────────────────────────────────────────────────────
-async function fetchPageContent(url) {
-  if (!url) return null;
-  try {
-    const ctrl = new AbortController();
-    const t    = setTimeout(() => ctrl.abort(), 8000);
-    const res  = await fetch(url, {
-      signal: ctrl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PlateIQ/1.0)' }
-    });
-    clearTimeout(t);
-    if (!res.ok) return null;
-    const html = await res.text();
-    const clean = html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ')
-      .replace(/\s{2,}/g, ' ').trim().slice(0, 3000);
-    return clean || null;
-  } catch(e) { return null; }
-}
+// ── AI report generation ──────────────────────────────────────────────────────
+async function generateReport(restaurant, weekData, history) {
+  const trend = history.length >= 2
+    ? (weekData.orders > history[1].orders ? 'up' : weekData.orders < history[1].orders ? 'down' : 'flat')
+    : 'unknown';
+  const prevWeek = history[1] || null;
+  const orderDelta = prevWeek ? weekData.orders - prevWeek.orders : 0;
+  const revDelta   = prevWeek ? (weekData.revenue - prevWeek.revenue).toFixed(2) : 0;
 
-// ── Claude analysis ───────────────────────────────────────────────────────────
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : null;
-
-async function analyseRestaurant(input, pageContent) {
-  if (!anthropic) return generateDemoReport(input);
-
-  const platform = input.url?.includes('ubereats') ? 'Uber Eats'
-    : input.url?.includes('just-eat') ? 'Just Eat'
-    : input.url?.includes('deliveroo') ? 'Deliveroo'
-    : 'delivery platform';
+  const historyStr = history.slice(0, 8).map(h =>
+    `Week ending ${h.week_ending}: ${h.orders} orders, £${h.revenue} revenue, AOV £${h.aov}, rating ${h.rating}`
+  ).join('\n');
 
   const prompt = `You are a specialist in restaurant delivery platform optimisation — Uber Eats, Just Eat, and Deliveroo in the UK.
 
-Analyse this restaurant's delivery presence and generate a detailed performance report.
+Generate a detailed weekly performance report for this restaurant.
 
-RESTAURANT DETAILS:
-Name: ${input.restaurantName}
-City / area: ${input.city}
-Cuisine: ${input.cuisine || 'not specified'}
-Platforms they're on: ${input.platforms || 'not specified'}
-Listing URL: ${input.url || 'not provided'}
-Exclusive to one platform: ${input.exclusive === 'yes' ? 'Yes' : 'No — on multiple platforms'}
+RESTAURANT:
+Name: ${restaurant.name}
+Postcode: ${restaurant.postcode || 'not provided'}
+Cuisine: ${restaurant.cuisine || 'not specified'}
+Platforms: ${restaurant.platforms || 'not specified'}
 
-${pageContent ? `PAGE CONTENT (extracted from their listing URL):\n${pageContent}\n` : ''}
+THIS WEEK'S DATA (week ending ${weekData.week_ending}):
+- Orders: ${weekData.orders}
+- Revenue: £${weekData.revenue}
+- Average order value: £${weekData.aov}
+- Current rating: ${weekData.rating}
+- New reviews this week: ${weekData.new_reviews || 0}
+- Notes from our team: ${weekData.notes || 'none'}
 
-Based on this information, generate a comprehensive performance audit. Be specific to their cuisine type, city, and platform. Reference real platform mechanics.
+TREND vs LAST WEEK:
+- Orders: ${orderDelta >= 0 ? '+' : ''}${orderDelta} (${trend})
+- Revenue: ${revDelta >= 0 ? '+' : ''}£${Math.abs(revDelta)}
+
+HISTORICAL DATA (last 8 weeks):
+${historyStr || 'First week — no historical data yet'}
+
+Based on this data, generate a specific, insightful weekly report. Reference the actual numbers. Be direct and honest — if performance is down, say why and what to do. If it's up, say what's working and how to sustain it.
 
 Respond ONLY with valid JSON — no markdown, no preamble:
 {
-  "score": <integer 40-82>,
-  "scoreLabel": "<3-5 word verdict>",
-  "scoreSub": "<one sentence on what this score means for their order volume>",
-  "dimensions": {
-    "photoScore": <0-10>,
-    "menuScore": <0-10>,
-    "pricingScore": <0-10>,
-    "visibilityScore": <0-10>,
-    "reviewScore": <0-10>
+  "headline": "<one punchy sentence summarising this week — e.g. 'Strong Friday performance, but midweek gap is widening'>",
+  "summary": "<2-3 sentences of honest analysis referencing the actual numbers and trend>",
+  "scorecard": {
+    "orders": { "value": ${weekData.orders}, "delta": ${orderDelta}, "trend": "${trend}" },
+    "revenue": { "value": ${weekData.revenue}, "delta": ${revDelta}, "trend": "${trend}" },
+    "aov": { "value": ${weekData.aov}, "delta": ${prevWeek ? (weekData.aov - prevWeek.aov).toFixed(2) : 0} },
+    "rating": { "value": ${weekData.rating}, "delta": ${prevWeek ? (weekData.rating - prevWeek.rating).toFixed(2) : 0} }
   },
-  "freeInsights": [
+  "insights": [
     {
       "type": "critical|warning|positive",
       "icon": "<emoji>",
-      "title": "<specific, direct headline>",
-      "body": "<2-3 sentences — specific to their cuisine, city, platform. Reference actual platform mechanics.>",
-      "impact": "<realistic impact estimate e.g. '+12-18 orders/week'>"
+      "title": "<specific insight title — reference actual numbers>",
+      "body": "<2-3 sentences — specific to their cuisine, postcode area, platform. What does this number mean? Why?>"
     }
   ],
-  "lockedInsights": [
-    {
-      "icon": "<emoji>",
-      "title": "<teaser headline — intriguing but don't give the full answer>",
-      "preview": "<one teaser sentence — hints at the finding without revealing it>"
-    }
+  "thisWeekActions": [
+    "<specific, concrete action — not generic advice. Reference their actual situation.>",
+    "<specific action>",
+    "<specific action>"
   ],
-  "photoAudit": {
-    "totalItems": <estimated integer>,
-    "itemsWithPhotos": <estimated integer>,
-    "missingPhotos": ["<item name>", "<item name>"],
-    "priorityItem": "<the single most important item to photograph first>"
-  },
-  "weeklyPulse": {
-    "totalOrders": <estimated weekly integer>,
-    "avgOrderValue": <estimated float>,
-    "trend": "up|flat|down",
-    "trendPct": <integer>,
-    "dayData": [
-      {"day": "Mon", "orders": <int>},
-      {"day": "Tue", "orders": <int>},
-      {"day": "Wed", "orders": <int>},
-      {"day": "Thu", "orders": <int>},
-      {"day": "Fri", "orders": <int>},
-      {"day": "Sat", "orders": <int>},
-      {"day": "Sun", "orders": <int>}
-    ],
-    "insight": "<one specific insight about their trading pattern>"
-  },
-  "competitors": [
-    {"rank": 1, "name": "<realistic competitor name for their area>", "score": <int 80-97>, "photos": "<X/Y>", "rating": "<float>", "isYou": false},
-    {"rank": 2, "name": "<competitor>", "score": <int 75-90>, "photos": "<X/Y>", "rating": "<float>", "isYou": false},
-    {"rank": 3, "name": "<competitor>", "score": <int 65-80>, "photos": "<X/Y>", "rating": "<float>", "isYou": false},
-    {"rank": 4, "name": "${input.restaurantName}", "score": <same as top-level score>, "photos": "<estimated X/Y>", "rating": "<estimated rating>", "isYou": true},
-    {"rank": 5, "name": "<competitor>", "score": <int 50-70>, "photos": "<X/Y>", "rating": "<float>", "isYou": false}
+  "longerTermActions": [
+    "<action for next 2-4 weeks>",
+    "<action for next 2-4 weeks>"
   ],
-  "actionPlan": {
-    "thisWeek": ["<specific action>", "<specific action>", "<specific action>"],
-    "twoWeeks": ["<specific action>", "<specific action>", "<specific action>"],
-    "thisMonth": ["<specific action>"]
-  },
-  "competitorGap": "<one sentence on the main gap between this restaurant and the #1 in their area>"
+  "ratingAnalysis": "<one paragraph on their rating — is 4.X good for their cuisine in their area? What does it mean for platform ranking? What should they do?>",
+  "weeklyInsight": "<one specific insight about their trading pattern based on the trend — e.g. if orders are consistently low on certain days, call it out>"
 }
 
-The freeInsights array must have EXACTLY 3 items.
-The lockedInsights array must have EXACTLY 5 items — these are blurred/locked behind the paid plan.
-Make estimates realistic — don't be overly optimistic. A restaurant with issues should score 45-65.`;
+The insights array must have EXACTLY 3 items. Make them specific to the actual data — not generic delivery advice.`;
+
+  if (!anthropic) return generateFallbackReport(restaurant, weekData, trend, orderDelta);
 
   const msg = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 2500,
+    max_tokens: 2000,
     messages: [{ role: 'user', content: prompt }]
   });
-
   const text = msg.content[0]?.text?.replace(/```json|```/g, '').trim();
   return JSON.parse(text);
 }
 
-function generateDemoReport(input) {
+function generateFallbackReport(restaurant, weekData, trend, orderDelta) {
   return {
-    score: 71, scoreLabel: 'Good foundations',
-    scoreSub: `${input.restaurantName} has solid basics but critical gaps in photo coverage are limiting your reach.`,
-    dimensions: { photoScore: 4.2, menuScore: 6.8, pricingScore: 8.1, visibilityScore: 7.0, reviewScore: 8.4 },
-    freeInsights: [
-      { type:'critical', icon:'📸', title:'Only 8 of 24 menu items have a photo', body:`Items without photos on Uber Eats receive 63% fewer clicks. Your highest-margin category has zero photos.`, impact:'+18–24 orders/week if resolved' },
-      { type:'warning', icon:'📂', title:`Menu category "Extras" is suppressing basket size`, body:`14 items grouped under one catch-all category. Split into Sides, Breads, and Drinks to surface items customers want.`, impact:'Avg basket up £2.40–£3.80' },
-      { type:'positive', icon:'⭐', title:'Review response rate in top 15% for your area', body:`91% of reviews answered in 30 days. Uber Eats rewards this with improved search placement. Keep it up.`, impact:'Protects current ranking' }
-    ],
-    lockedInsights: [
-      { icon:'💰', title:'Your pricing strategy has a hidden leak', preview:'We found a specific pricing issue that\'s likely costing you 8–12 orders every week...' },
-      { icon:'🏆', title:'The #1 restaurant in your area does one thing differently', preview:'It\'s not what you\'d expect — and it\'s something you can replicate in under an hour...' },
-      { icon:'📢', title:'Two promotional opportunities your competitors are missing', preview:'There are two gaps in the local market right now that you could fill this week...' },
-      { icon:'🔄', title:'Cross-platform inconsistency is hurting your algorithm ranking', preview:'Your listings don\'t match across platforms — here\'s what that\'s costing you...' },
-      { icon:'⚡', title:'The single highest-impact change you can make today', preview:'One change, 15 minutes, estimated +14 orders in the first week...' }
-    ],
-    photoAudit: { totalItems: 24, itemsWithPhotos: 8, missingPhotos: ['Chicken Biryani','Lamb Biryani','Vegetable Korma','Dal Makhani','Peshwari Naan'], priorityItem: 'Chicken Biryani' },
-    weeklyPulse: {
-      totalOrders: 312, avgOrderValue: 24.30, trend: 'up', trendPct: 8,
-      dayData: [
-        {day:'Mon',orders:28},{day:'Tue',orders:32},{day:'Wed',orders:38},
-        {day:'Thu',orders:46},{day:'Fri',orders:82},{day:'Sat',orders:98},{day:'Sun',orders:56}
-      ],
-      insight: 'Your Monday–Wednesday volume is 34% below the area average. A midweek bundle deal could close this gap.'
+    headline: `${weekData.orders} orders this week — ${trend === 'up' ? 'up ' + orderDelta + ' vs last week' : trend === 'down' ? 'down ' + Math.abs(orderDelta) + ' vs last week' : 'holding steady'}`,
+    summary: `${restaurant.name} generated ${weekData.orders} orders and £${weekData.revenue} revenue this week with an average order value of £${weekData.aov}. Rating is holding at ${weekData.rating}.`,
+    scorecard: {
+      orders:  { value: weekData.orders,  delta: orderDelta, trend },
+      revenue: { value: weekData.revenue, delta: 0, trend },
+      aov:     { value: weekData.aov,     delta: 0 },
+      rating:  { value: weekData.rating,  delta: 0 }
     },
-    competitors: [
-      {rank:1,name:'Zouk',score:94,photos:'32/32',rating:'4.9',isYou:false},
-      {rank:2,name:'Mughli',score:88,photos:'28/28',rating:'4.8',isYou:false},
-      {rank:3,name:'Bundobust',score:79,photos:'19/26',rating:'4.7',isYou:false},
-      {rank:4,name:input.restaurantName,score:71,photos:'8/24',rating:'4.6',isYou:true},
-      {rank:5,name:"Akbar's",score:68,photos:'12/22',rating:'4.5',isYou:false}
+    insights: [
+      { type: 'positive', icon: '📊', title: 'Weekly data recorded', body: 'Your performance data has been logged for this week. Connect an Anthropic API key to generate full AI analysis.' },
+      { type: 'warning',  icon: '📸', title: 'Photo coverage review recommended', body: 'Ensure all high-margin items have high-quality photos — this is the single biggest lever on delivery platforms.' },
+      { type: 'positive', icon: '⭐', title: `Rating at ${weekData.rating}`, body: `A ${weekData.rating} rating ${weekData.rating >= 4.5 ? 'is strong' : weekData.rating >= 4.0 ? 'is decent but there is room to improve' : 'needs attention — below 4.0 significantly impacts platform ranking'}.` }
     ],
-    actionPlan: {
-      thisWeek: ['Upload photos for Chicken Biryani, Lamb Biryani, and Vegetable Korma','Respond to 3 unanswered reviews from this week','Create a Midweek Meal Deal bundle — run Tue & Wed'],
-      twoWeeks: ['Split "Extras" into Sides, Breads, and Drinks','Add descriptions to your 8 highest-price mains','Fix pricing discrepancy between Uber Eats and Just Eat listings'],
-      thisMonth: ['Plan a seasonal promotional menu for the upcoming peak period']
-    },
-    competitorGap: 'Zouk leads primarily through 100% photo coverage and a £3 lower minimum order — both fixable in under a week.'
+    thisWeekActions: ['Review and respond to all new reviews this week', 'Check that your menu pricing is consistent across all platforms', 'Ensure your top 5 items have high-quality photos'],
+    longerTermActions: ['Plan a promotional offer for your slowest trading day', 'Review your menu category structure for clarity'],
+    ratingAnalysis: `A rating of ${weekData.rating} on delivery platforms ${weekData.rating >= 4.5 ? 'is excellent and puts you in the top tier for search placement' : weekData.rating >= 4.2 ? 'is solid but upgrading to 4.5+ would unlock significantly better platform visibility' : 'needs improvement — platforms deprioritise restaurants below 4.0 in search results'}.`,
+    weeklyInsight: 'Continue logging weekly data to build a trend picture — insights improve significantly after 4+ weeks of data.'
   };
 }
 
-// ── API Routes ────────────────────────────────────────────────────────────────
-
-// POST /api/analyse — main analysis endpoint
-app.post('/api/analyse', async (req, res) => {
-  const { restaurantName, city, cuisine, platforms, url, exclusive } = req.body;
-  if (!restaurantName || !city) return res.status(400).json({ ok: false, error: 'Restaurant name and city are required.' });
-
+// ── Email helper ──────────────────────────────────────────────────────────────
+async function sendReportEmail(toEmail, restaurantName, weekEnding, reportData) {
+  if (!mailer) return;
   try {
-    console.log(`[analyse] ${restaurantName}, ${city}`);
-    const pageContent = url ? await fetchPageContent(url) : null;
-    if (pageContent) console.log(`[analyse] fetched ${pageContent.length} chars from ${url}`);
-    const report = await analyseRestaurant({ restaurantName, city, cuisine, platforms, url, exclusive }, pageContent);
-    res.json({ ok: true, report, restaurantName, city, cuisine, platforms, url });
-  } catch(e) {
-    console.error('[analyse] error:', e.message);
-    res.status(500).json({ ok: false, error: 'Analysis failed. Please try again.' });
-  }
-});
+    await mailer.sendMail({
+      from: process.env.SMTP_FROM || 'reports@plateiq.co.uk',
+      to: toEmail,
+      subject: `Your PlateIQ weekly report — ${restaurantName} — w/e ${weekEnding}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+          <h2 style="color:#1a1a1a;">${reportData.headline}</h2>
+          <p style="color:#6b6b6b;">${reportData.summary}</p>
+          <div style="background:#fef3dc;border-radius:8px;padding:16px;margin:16px 0;">
+            <strong>This week's numbers:</strong><br>
+            Orders: ${reportData.scorecard.orders.value} &nbsp;|&nbsp;
+            Revenue: £${reportData.scorecard.revenue.value} &nbsp;|&nbsp;
+            AOV: £${reportData.scorecard.aov.value} &nbsp;|&nbsp;
+            Rating: ${reportData.scorecard.rating.value}
+          </div>
+          <p><strong>This week's actions:</strong></p>
+          <ul>${(reportData.thisWeekActions||[]).map(a => `<li>${a}</li>`).join('')}</ul>
+          <p style="margin-top:24px;"><a href="${BASE}/dashboard" style="background:#1a1a1a;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">View full report →</a></p>
+        </div>
+      `
+    });
+    console.log(`[email] Report sent to ${toEmail}`);
+  } catch(e) { console.warn('[email] Failed:', e.message); }
+}
 
-// POST /api/register — create account + save report
+// ── Stripe webhook ────────────────────────────────────────────────────────────
+async function handleStripeWebhook(req, res) {
+  if (!stripe) return res.json({ received: true });
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);
+  } catch(e) { return res.status(400).send(`Webhook error: ${e.message}`); }
+
+  if (event.type === 'checkout.session.completed') {
+    const sess = event.data.object;
+    const email = sess.customer_email || sess.metadata?.email;
+    const plan  = sess.metadata?.plan;
+    if (email && plan && pgPool) {
+      await pgPool.query(
+        'UPDATE users SET plan=$1, plan_status=$2, stripe_customer_id=$3, stripe_sub_id=$4 WHERE email=$5',
+        [plan, 'active', sess.customer, sess.subscription, email.toLowerCase()]
+      );
+      console.log(`[stripe] ${email} subscribed to ${plan}`);
+    }
+  }
+  if (event.type === 'customer.subscription.deleted') {
+    const sub = event.data.object;
+    if (pgPool) {
+      await pgPool.query('UPDATE users SET plan_status=$1 WHERE stripe_sub_id=$2', ['cancelled', sub.id]);
+    }
+  }
+  res.json({ received: true });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API ROUTES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
 app.post('/api/register', async (req, res) => {
-  const { email, password, reportData } = req.body;
+  const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ ok: false, error: 'Email and password required.' });
   if (password.length < 6) return res.status(400).json({ ok: false, error: 'Password must be at least 6 characters.' });
-
   try {
     const existing = await findUser(email);
-    if (existing) return res.status(409).json({ ok: false, error: 'An account with this email already exists. Please sign in.' });
-
+    if (existing) return res.status(409).json({ ok: false, error: 'Account already exists. Please sign in.' });
     await createUser(email, password);
     const token = await createSession(email);
-    let reportId = null;
-    if (reportData) reportId = await saveReport(email, reportData);
-    res.json({ ok: true, token, reportId });
-  } catch(e) {
-    console.error('[register] error:', e.message);
-    res.status(500).json({ ok: false, error: 'Could not create account. Please try again.' });
-  }
+    res.json({ ok: true, token });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// POST /api/login
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -333,61 +359,245 @@ app.post('/api/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ ok: false, error: 'Incorrect password.' });
     const token = await createSession(email);
-    const reports = await getUserReports(email);
-    res.json({ ok: true, token, email: user.email, plan: user.plan, reports });
-  } catch(e) {
-    res.status(500).json({ ok: false, error: 'Login failed.' });
-  }
+    res.json({ ok: true, token, plan: user.plan, planStatus: user.plan_status });
+  } catch(e) { res.status(500).json({ ok: false, error: 'Login failed.' }); }
 });
 
-// POST /api/save-report — save report for logged in user
-app.post('/api/save-report', async (req, res) => {
+app.post('/api/logout', requireAuth, async (req, res) => {
   const token = req.headers['x-session-token'];
-  const sess  = await getSession(token);
-  if (!sess) return res.status(401).json({ ok: false, error: 'Not logged in.' });
+  if (pgPool) await pgPool.query('DELETE FROM sessions WHERE token=$1', [token]);
+  res.json({ ok: true });
+});
+
+app.get('/api/me', requireAuth, async (req, res) => {
+  const user = req.user;
+  const restaurant = await getUserRestaurant(req.userEmail);
+  res.json({ ok: true, email: user.email, plan: user.plan, planStatus: user.plan_status, restaurant });
+});
+
+// ── Stripe checkout ───────────────────────────────────────────────────────────
+const PLAN_PRICES = {
+  starter: process.env.STRIPE_PRICE_STARTER,
+  growth:  process.env.STRIPE_PRICE_GROWTH,
+  partner: process.env.STRIPE_PRICE_PARTNER
+};
+
+app.post('/api/checkout', requireAuth, async (req, res) => {
+  if (!stripe) return res.status(400).json({ ok: false, error: 'Stripe not configured.' });
+  const { plan } = req.body;
+  const priceId = PLAN_PRICES[plan];
+  if (!priceId) return res.status(400).json({ ok: false, error: 'Invalid plan.' });
   try {
-    const id = await saveReport(sess.email, req.body);
-    res.json({ ok: true, reportId: id });
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      customer_email: req.userEmail,
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata: { email: req.userEmail, plan },
+      success_url: `${BASE}/onboarding?plan=${plan}`,
+      cancel_url: `${BASE}/dashboard`,
+    });
+    res.json({ ok: true, checkoutUrl: session.url });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+app.post('/api/cancel-subscription', requireAuth, async (req, res) => {
+  if (!stripe || !req.user.stripe_sub_id) return res.status(400).json({ ok: false, error: 'No active subscription.' });
+  try {
+    await stripe.subscriptions.update(req.user.stripe_sub_id, { cancel_at_period_end: true });
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ── Restaurant + credentials ──────────────────────────────────────────────────
+app.post('/api/restaurant', requireAuth, async (req, res) => {
+  const { name, postcode, cuisine, platforms } = req.body;
+  if (!name) return res.status(400).json({ ok: false, error: 'Restaurant name required.' });
+  if (!pgPool) return res.json({ ok: true, id: 'demo' });
+  try {
+    // Upsert — one restaurant per user for now
+    const existing = await getUserRestaurant(req.userEmail);
+    let id;
+    if (existing) {
+      await pgPool.query(
+        'UPDATE restaurants SET name=$1, postcode=$2, cuisine=$3, platforms=$4 WHERE id=$5',
+        [name, postcode, cuisine, platforms, existing.id]
+      );
+      id = existing.id;
+    } else {
+      const r = await pgPool.query(
+        'INSERT INTO restaurants (user_email, name, postcode, cuisine, platforms) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+        [req.userEmail, name, postcode, cuisine, platforms]
+      );
+      id = r.rows[0].id;
+    }
+    res.json({ ok: true, id });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+app.post('/api/credentials', requireAuth, async (req, res) => {
+  if (!pgPool) return res.json({ ok: true });
+  const restaurant = await getUserRestaurant(req.userEmail);
+  if (!restaurant) return res.status(400).json({ ok: false, error: 'No restaurant found.' });
+  const { credentials } = req.body; // array of { platform, login_email, login_password, notes }
+  try {
+    // Delete existing and re-insert
+    await pgPool.query('DELETE FROM credentials WHERE restaurant_id=$1', [restaurant.id]);
+    for (const cred of (credentials || [])) {
+      await pgPool.query(
+        'INSERT INTO credentials (restaurant_id, platform, login_email, login_password, notes) VALUES ($1,$2,$3,$4,$5)',
+        [restaurant.id, cred.platform, cred.login_email, cred.login_password, cred.notes || null]
+      );
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ── Dashboard data ────────────────────────────────────────────────────────────
+app.get('/api/dashboard', requireAuth, async (req, res) => {
+  try {
+    const restaurant = await getUserRestaurant(req.userEmail);
+    if (!restaurant) return res.json({ ok: true, restaurant: null, history: [], latestReport: null });
+    const history = await getRestaurantHistory(restaurant.id);
+    const latestReport = history[0]?.report_data || null;
+    res.json({ ok: true, restaurant, history, latestReport });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ── Report by ID ──────────────────────────────────────────────────────────────
+app.get('/api/report/:weekEnding', requireAuth, async (req, res) => {
+  if (!pgPool) return res.status(404).json({ ok: false });
+  const restaurant = await getUserRestaurant(req.userEmail);
+  if (!restaurant) return res.status(404).json({ ok: false });
+  const r = await pgPool.query(
+    'SELECT * FROM reports WHERE restaurant_id=$1 AND week_ending=$2',
+    [restaurant.id, req.params.weekEnding]
+  );
+  if (!r.rows[0]) return res.status(404).json({ ok: false });
+  res.json({ ok: true, report: r.rows[0].report_data });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADMIN ROUTES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// GET /admin/clients — all clients with restaurant + plan info
+app.get('/api/admin/clients', requireAdmin, async (req, res) => {
+  if (!pgPool) return res.json({ ok: true, clients: [] });
+  const r = await pgPool.query(`
+    SELECT u.email, u.plan, u.plan_status, u.created_at,
+           rest.id as restaurant_id, rest.name, rest.postcode, rest.cuisine, rest.platforms,
+           (SELECT COUNT(*) FROM weekly_data wd WHERE wd.restaurant_id = rest.id) as weeks_logged
+    FROM users u
+    LEFT JOIN restaurants rest ON rest.user_email = u.email
+    ORDER BY u.created_at DESC
+  `);
+  res.json({ ok: true, clients: r.rows });
+});
+
+// GET /admin/client/:email — full client detail including credentials
+app.get('/api/admin/client/:email', requireAdmin, async (req, res) => {
+  if (!pgPool) return res.json({ ok: true });
+  const email = req.params.email;
+  const user = await findUser(email);
+  const restaurant = await getUserRestaurant(email);
+  let credentials = [], history = [];
+  if (restaurant) {
+    const cr = await pgPool.query('SELECT * FROM credentials WHERE restaurant_id=$1', [restaurant.id]);
+    credentials = cr.rows;
+    history = await getRestaurantHistory(restaurant.id);
+  }
+  res.json({ ok: true, user, restaurant, credentials, history });
+});
+
+// POST /admin/weekly-data — enter weekly numbers for a client
+app.post('/api/admin/weekly-data', requireAdmin, async (req, res) => {
+  const { restaurantId, weekEnding, orders, revenue, aov, rating, newReviews, notes } = req.body;
+  if (!restaurantId || !weekEnding) return res.status(400).json({ ok: false, error: 'restaurantId and weekEnding required.' });
+  if (!pgPool) return res.json({ ok: true });
+  try {
+    await pgPool.query(`
+      INSERT INTO weekly_data (restaurant_id, week_ending, orders, revenue, aov, rating, new_reviews, notes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      ON CONFLICT (restaurant_id, week_ending) DO UPDATE SET
+        orders=$3, revenue=$4, aov=$5, rating=$6, new_reviews=$7, notes=$8
+    `, [restaurantId, weekEnding, orders, revenue, aov, rating, newReviews || 0, notes || null]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// POST /admin/generate-report — generate AI report for a specific week
+app.post('/api/admin/generate-report', requireAdmin, async (req, res) => {
+  const { restaurantId, weekEnding } = req.body;
+  if (!restaurantId || !weekEnding) return res.status(400).json({ ok: false, error: 'restaurantId and weekEnding required.' });
+  if (!pgPool) return res.status(400).json({ ok: false, error: 'No DB.' });
+  try {
+    // Get restaurant
+    const rr = await pgPool.query('SELECT * FROM restaurants WHERE id=$1', [restaurantId]);
+    const restaurant = rr.rows[0];
+    if (!restaurant) return res.status(404).json({ ok: false, error: 'Restaurant not found.' });
+
+    // Get this week's data
+    const wr = await pgPool.query('SELECT * FROM weekly_data WHERE restaurant_id=$1 AND week_ending=$2', [restaurantId, weekEnding]);
+    const weekData = wr.rows[0];
+    if (!weekData) return res.status(404).json({ ok: false, error: 'No weekly data found for this week. Enter data first.' });
+
+    // Get history
+    const history = await getRestaurantHistory(restaurantId);
+
+    // Generate AI report
+    console.log(`[admin] Generating report for ${restaurant.name} week ${weekEnding}`);
+    const reportData = await generateReport(restaurant, weekData, history);
+
+    // Save report
+    await pgPool.query(`
+      INSERT INTO reports (restaurant_id, week_ending, report_data)
+      VALUES ($1,$2,$3)
+      ON CONFLICT (restaurant_id, week_ending) DO UPDATE SET report_data=$3
+    `, [restaurantId, weekEnding, JSON.stringify(reportData)]);
+
+    // Send email if client has active plan
+    const user = await findUser(restaurant.user_email);
+    if (user?.plan_status === 'active') {
+      await sendReportEmail(user.email, restaurant.name, weekEnding, reportData);
+      await pgPool.query('UPDATE reports SET emailed_at=NOW() WHERE restaurant_id=$1 AND week_ending=$2', [restaurantId, weekEnding]);
+    }
+
+    res.json({ ok: true, report: reportData });
   } catch(e) {
+    console.error('[admin] generate-report error:', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// GET /api/reports — get all reports for logged in user
-app.get('/api/reports', async (req, res) => {
-  const token = req.headers['x-session-token'];
-  const sess  = await getSession(token);
-  if (!sess) return res.status(401).json({ ok: false, error: 'Not logged in.' });
-  const reports = await getUserReports(sess.email);
-  res.json({ ok: true, reports });
+// DELETE /admin/client/:email — delete account
+app.delete('/api/admin/client/:email', requireAdmin, async (req, res) => {
+  if (!pgPool) return res.json({ ok: true });
+  try {
+    await pgPool.query('DELETE FROM users WHERE email=$1', [req.params.email]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// GET /api/report/:id — get single report
-app.get('/api/report/:id', async (req, res) => {
-  const token = req.headers['x-session-token'];
-  const sess  = await getSession(token);
-  if (!sess) return res.status(401).json({ ok: false, error: 'Not logged in.' });
-  if (!pgPool) return res.status(404).json({ ok: false });
-  const r = await pgPool.query(
-    'SELECT * FROM reports WHERE id=$1 AND user_email=$2',
-    [req.params.id, sess.email]
-  );
-  if (!r.rows[0]) return res.status(404).json({ ok: false });
-  res.json({ ok: true, report: r.rows[0] });
+// GET /admin/stats — revenue overview
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+  if (!pgPool) return res.json({ ok: true, stats: {} });
+  const r = await pgPool.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE plan_status='active') as active_clients,
+      COUNT(*) FILTER (WHERE plan='starter' AND plan_status='active') as starter_count,
+      COUNT(*) FILTER (WHERE plan='growth'  AND plan_status='active') as growth_count,
+      COUNT(*) FILTER (WHERE plan='partner' AND plan_status='active') as partner_count,
+      COUNT(*) as total_users
+    FROM users
+  `);
+  const s = r.rows[0];
+  const mrr = (s.starter_count * 199) + (s.growth_count * 499) + (s.partner_count * 999);
+  res.json({ ok: true, stats: { ...s, mrr } });
 });
 
-// GET /api/me
-app.get('/api/me', async (req, res) => {
-  const token = req.headers['x-session-token'];
-  const sess  = await getSession(token);
-  if (!sess) return res.status(401).json({ ok: false });
-  const user = await findUser(sess.email);
-  res.json({ ok: true, email: user?.email, plan: user?.plan || 'free' });
-});
+// ── Page routes ───────────────────────────────────────────────────────────────
+const pages = ['dashboard', 'login', 'onboarding', 'account', 'admin'];
+pages.forEach(p => app.get(`/${p}`, (req, res) => res.sendFile(path.join(__dirname, 'public', `${p}.html`))));
 
-// Serve HTML pages
-app.get('/report', (req, res) => res.sendFile(path.join(__dirname, 'public', 'report.html')));
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-
-app.listen(PORT, () => console.log(`PlateIQ running on port ${PORT}`));
+app.listen(PORT, () => console.log(`PlateIQ v2 running on port ${PORT}`));
