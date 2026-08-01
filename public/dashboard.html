@@ -2,83 +2,304 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Dashboard — PlateIQ</title>
+<title>Dashboard - PlateIQ</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#1a1a1a;--ink-s:#3d3d3d;--muted:#6b6b6b;--muted-l:#a0a0a0;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-p:#fef3dc;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--r-lg:18px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
+:root{--ink:#1a1a1a;--ink-s:#3d3d3d;--muted:#6b6b6b;--muted-l:#a0a0a0;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-d:#c47f0a;--amber-p:#fef3dc;--red:#dc2626;--red-p:#fef2f2;--green:#16a34a;--green-p:#f0fdf4;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--r-lg:18px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;}
-nav{display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:64px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;}
+/* Nav */
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
 .brand{font-family:var(--serif);font-size:20px;color:var(--ink);}
 .brand span{color:var(--amber);}
-.btn-logout{font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;margin-left:16px;}
-.wrap{max-width:900px;margin:0 auto;padding:40px 24px;}
-.welcome{font-family:var(--serif);font-size:clamp(24px,4vw,36px);color:var(--ink);margin-bottom:4px;}
-.welcome-sub{font-size:14px;color:var(--muted);margin-bottom:32px;}
-.new-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--sans);font-size:13.5px;font-weight:700;background:var(--ink);color:#fff;text-decoration:none;border-radius:var(--r);padding:11px 22px;margin-bottom:36px;}
-.sec-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.sec-label::after{content:"";flex:1;height:1px;background:var(--border);}
-.reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
-.rc{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;cursor:pointer;transition:box-shadow .15s;}
-.rc:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
-.rc-score{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
-.rc-num{font-family:var(--serif);font-size:32px;}
-.rc-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
-.rc-name{font-family:var(--serif);font-size:16px;color:var(--ink);margin-bottom:3px;}
-.rc-meta{font-size:12px;color:var(--muted);}
-.rc-date{font-size:11px;color:var(--muted-l);margin-top:10px;}
+.nav-links{display:flex;align-items:center;gap:4px;}
+.nav-link{font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:var(--r);transition:all .12s;}
+.nav-link:hover,.nav-link.active{color:var(--ink);background:var(--bg);}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-email{font-size:12.5px;color:var(--muted);}
+.btn-logout{font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 10px;}
+/* Layout */
+.wrap{max-width:1000px;margin:0 auto;padding:36px 24px 80px;}
+/* Header */
+.dash-header{margin-bottom:32px;}
+.dash-title{font-family:var(--serif);font-size:clamp(22px,3vw,32px);color:var(--ink);margin-bottom:4px;}
+.dash-sub{font-size:13.5px;color:var(--muted);}
+.report-week{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-top:4px;}
+/* Metric cards */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.metric-card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:18px;}
+.metric-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:8px;}
+.metric-value{font-family:var(--serif);font-size:28px;color:var(--ink);line-height:1;}
+.metric-delta{font-size:12px;font-weight:600;margin-top:6px;}
+.delta-up{color:var(--green);}
+.delta-down{color:var(--red);}
+.delta-flat{color:var(--muted);}
+/* Two-col layout */
+.two-col{display:grid;grid-template-columns:1fr 340px;gap:20px;margin-bottom:20px;}
+.card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:22px;}
+.card-title{font-family:var(--serif);font-size:17px;color:var(--ink);margin-bottom:4px;}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+/* Chart */
+.pulse-chart{display:flex;align-items:flex-end;gap:6px;height:80px;margin-bottom:12px;}
+.pulse-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;}
+.pulse-bar{width:100%;border-radius:3px 3px 0 0;background:var(--amber);position:relative;min-height:3px;transition:opacity .15s;}
+.pulse-bar:hover{opacity:.8;}
+.pulse-bar.low{background:var(--border-m);}
+.pulse-bar.peak{box-shadow:0 0 0 2px var(--amber-d);}
+.pulse-val{font-size:8px;font-weight:700;color:var(--muted);position:absolute;top:-12px;left:50%;transform:translateX(-50%);white-space:nowrap;}
+.pulse-day{font-size:9px;color:var(--muted-l);font-weight:600;}
+/* History */
+.history-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.history-item:last-child{border-bottom:none;}
+.history-item:hover .history-week{color:var(--amber);}
+.history-week{font-size:13px;font-weight:600;color:var(--ink);transition:color .12s;}
+.history-meta{font-size:12px;color:var(--muted);}
+.history-score{font-family:var(--serif);font-size:16px;color:var(--amber);}
+/* Insights */
+.alert{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--r);border-left:3px solid;margin-bottom:10px;}
+.alert.critical{background:var(--red-p);border-color:var(--red);}
+.alert.warning{background:var(--amber-p);border-color:var(--amber);}
+.alert.positive{background:var(--green-p);border-color:var(--green);}
+.alert-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.alert-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.alert-body{font-size:12.5px;color:var(--ink-s);line-height:1.5;}
+/* Checklist */
+.action-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--r);background:var(--bg);border:1px solid var(--border);margin-bottom:6px;}
+.action-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-m);flex-shrink:0;margin-top:1px;cursor:pointer;}
+.action-text{font-size:12.5px;color:var(--ink-s);flex:1;}
+.action-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;flex-shrink:0;}
+.tag-q{background:var(--green-p);color:var(--green);}
+.tag-w{background:var(--amber-p);color:var(--amber-d);}
+/* Week selector */
+.week-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+.week-btn{font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:99px;border:1.5px solid var(--border-m);background:var(--card);color:var(--muted);cursor:pointer;transition:all .12s;}
+.week-btn.active{background:var(--amber);border-color:var(--amber);color:var(--ink);}
+/* Empty state */
 .empty{text-align:center;padding:60px 24px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);}
-@media(max-width:640px){nav{padding:0 20px;}.wrap{padding:24px 16px;}}
+.empty-icon{font-size:40px;margin-bottom:16px;}
+/* Account panel */
+.account-section{margin-bottom:20px;}
+.account-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+.account-row:last-child{border-bottom:none;}
+.account-label{font-size:13px;font-weight:600;color:var(--ink);}
+.account-value{font-size:13px;color:var(--muted);}
+.plan-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--amber-p);color:var(--amber-d);}
+.btn-sm{font-size:12px;font-weight:700;padding:6px 14px;border-radius:var(--r);border:1.5px solid var(--border-m);background:transparent;color:var(--ink);cursor:pointer;}
+.btn-sm.danger{border-color:rgba(220,38,38,.3);color:var(--red);}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}.metric-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){nav{padding:0 16px;}.wrap{padding:24px 16px;}.metric-grid{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
 <body>
 <nav>
   <div class="brand">Plate<span>IQ</span></div>
-  <div style="display:flex;align-items:center;">
-    <span style="font-size:13px;color:var(--muted);" id="navEmail"></span>
+  <div class="nav-links">
+    <a href="#" class="nav-link active" onclick="showView('report');return false;">Report</a>
+    <a href="#" class="nav-link" onclick="showView('account');return false;">Account</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-email" id="navEmail"></span>
     <button class="btn-logout" onclick="logout()">Sign out</button>
   </div>
 </nav>
-<div class="wrap">
-  <div class="welcome">Welcome back.</div>
-  <div class="welcome-sub">Your restaurant audits and reports.</div>
-  <a href="/" class="new-btn">+ Run a new audit</a>
-  <div class="sec-label">Your reports</div>
-  <div id="reportsList"></div>
+
+<div class="wrap" id="mainWrap">
+  <div id="loadingState" style="text-align:center;padding:80px;font-size:14px;color:var(--muted);">Loading your dashboard...</div>
+  <div id="reportView" style="display:none;"></div>
+  <div id="accountView" style="display:none;"></div>
 </div>
+
 <script>
-var token=localStorage.getItem('piq_token');
-var email=localStorage.getItem('piq_email');
-if(!token){window.location.href='/login';}
-document.getElementById('navEmail').textContent=email||'';
-function logout(){localStorage.removeItem('piq_token');localStorage.removeItem('piq_email');window.location.href='/';}
-function scoreColor(v){return v>=70?'#16a34a':v>=55?'#e8a020':'#dc2626';}
-function renderReports(reports){
-  var el=document.getElementById('reportsList');
-  if(!reports||!reports.length){
-    el.innerHTML='<div class="empty"><div style="font-size:40px;margin-bottom:16px;">&#128202;</div><div style="font-family:var(--serif);font-size:20px;color:var(--ink);margin-bottom:8px;">No reports yet</div><div style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">Run your first free audit to see your restaurant performance breakdown.</div><a href="/" class="new-btn">Get my free audit</a></div>';
+var token = localStorage.getItem('piq_token');
+var email = localStorage.getItem('piq_email');
+if (!token) window.location.href = '/login';
+document.getElementById('navEmail').textContent = email || '';
+
+var dashData = null;
+var currentWeekIdx = 0;
+
+function logout() {
+  fetch('/api/logout',{method:'POST',headers:{'x-session-token':token}});
+  localStorage.removeItem('piq_token'); localStorage.removeItem('piq_email');
+  window.location.href = '/';
+}
+
+function showView(v) {
+  document.getElementById('reportView').style.display  = v==='report'  ? 'block' : 'none';
+  document.getElementById('accountView').style.display = v==='account' ? 'block' : 'none';
+  document.querySelectorAll('.nav-link').forEach(function(l,i){ l.classList.toggle('active', i===(v==='report'?0:1)); });
+}
+
+function fmt(n) { return Number(n).toLocaleString('en-GB'); }
+function fmtGBP(n) { return '£' + Number(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function deltaHtml(val, unit) {
+  if (val == null || val == 0) return '<div class="metric-delta delta-flat">&rarr; No change</div>';
+  var v = Number(val);
+  var cls = v > 0 ? 'delta-up' : 'delta-down';
+  var arrow = v > 0 ? '&uarr;' : '&darr;';
+  return '<div class="metric-delta '+cls+'">'+arrow+' '+(unit||'')+Math.abs(v).toFixed(unit==='£'?2:0)+' vs last week</div>';
+}
+
+function buildReportView(data) {
+  var restaurant = data.restaurant;
+  var history    = data.history || [];
+  var report     = data.latestReport;
+
+  if (!restaurant) {
+    document.getElementById('reportView').innerHTML =
+      '<div class="empty"><div class="empty-icon">&#128197;</div>' +
+      '<div style="font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:8px;">Setup not complete</div>' +
+      '<div style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">Complete your account setup to get your first report.</div>' +
+      '<a href="/onboarding" style="display:inline-block;font-family:var(--sans);font-size:14px;font-weight:700;background:var(--ink);color:#fff;text-decoration:none;border-radius:var(--r);padding:12px 24px;">Complete setup &rarr;</a>' +
+      '</div>';
     return;
   }
-  el.innerHTML='<div class="reports-grid">'+reports.map(function(r){
-    var rd=r.report_data||{};
-    var score=rd.score||0;
-    var date=new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-    return '<div class="rc" onclick="viewReport(''+r.id+'')"><div class="rc-score"><div class="rc-num" style="color:'+scoreColor(score)+'">'+score+'</div><div class="rc-lbl">/100<br>'+(rd.scoreLabel||'')+'</div></div><div class="rc-name">'+(r.restaurant_name||'Restaurant')+'</div><div class="rc-meta">'+(r.city||'')+'</div><div class="rc-date">Audited '+date+'</div></div>';
-  }).join('')+'</div>';
-}
-async function viewReport(id){
-  var res=await fetch('/api/report/'+id,{headers:{'x-session-token':token}});
-  var d=await res.json();
-  if(d.ok&&d.report){
-    var rd=d.report;
-    sessionStorage.setItem('piq_report',JSON.stringify({report:rd.report_data,restaurantName:rd.restaurant_name,city:rd.city,cuisine:rd.cuisine,platforms:rd.platforms,url:rd.restaurant_url}));
-    window.location.href='/report';
+
+  if (!history.length) {
+    document.getElementById('reportView').innerHTML =
+      '<div class="dash-header"><div class="dash-title">'+restaurant.name+'</div>' +
+      '<div class="dash-sub">'+restaurant.postcode+' &middot; '+restaurant.platforms+'</div></div>' +
+      '<div class="empty"><div class="empty-icon">&#128202;</div>' +
+      '<div style="font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:8px;">Your first report is on its way</div>' +
+      '<div style="font-size:13.5px;color:var(--muted);line-height:1.6;max-width:400px;margin:0 auto;">Our team will log in to your '+restaurant.platforms+' account within 48 hours, pull your performance data, and generate your first weekly report. We'll email you when it's ready.</div>' +
+      '</div>';
+    return;
   }
+
+  var weekHistory = history;
+  var idx = Math.min(currentWeekIdx, weekHistory.length - 1);
+  var currentWeek = weekHistory[idx];
+  var rep = currentWeek.report_data || report;
+  var sc  = rep ? rep.scorecard : null;
+
+  var weekSelectorHtml = weekHistory.length > 1 ? '<div class="week-selector">' +
+    weekHistory.map(function(w,i) {
+      var d = new Date(w.week_ending);
+      var label = 'w/e '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      return '<button class="week-btn'+(i===idx?' active':'')+'" onclick="selectWeek('+i+')">'+label+'</button>';
+    }).join('') + '</div>' : '';
+
+  var metricsHtml = sc ? '<div class="metric-grid">' +
+    '<div class="metric-card"><div class="metric-label">Orders</div><div class="metric-value">'+fmt(sc.orders.value)+'</div>'+deltaHtml(sc.orders.delta,'')+'</div>' +
+    '<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+fmtGBP(sc.revenue.value)+'</div>'+deltaHtml(sc.revenue.delta,'£')+'</div>' +
+    '<div class="metric-card"><div class="metric-label">Avg order value</div><div class="metric-value">'+fmtGBP(sc.aov.value)+'</div>'+deltaHtml(sc.aov.delta,'£')+'</div>' +
+    '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+sc.rating.value+'</div>'+deltaHtml(sc.rating.delta,'')+'</div>' +
+    '</div>' : '';
+
+  // Pulse chart from weekly data
+  var dayData = rep && rep.weeklyInsight ? [] : [];
+  var pulseHtml = '';
+  if (weekHistory.length > 1) {
+    var orders = weekHistory.slice(0,8).reverse().map(function(w){ return {label:'w/e '+new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'}), orders:w.orders}; });
+    var maxO = Math.max.apply(null, orders.map(function(o){return o.orders||0;}));
+    pulseHtml = '<div class="pulse-chart">' +
+      orders.map(function(o){
+        var h = maxO > 0 ? Math.max(6, Math.round((o.orders||0)/maxO*100)) : 6;
+        var cls = o.orders === maxO ? 'peak' : o.orders < maxO*0.5 ? 'low' : '';
+        return '<div class="pulse-bar-wrap"><div class="pulse-bar '+cls+'" style="height:'+h+'%;"><span class="pulse-val">'+fmt(o.orders||0)+'</span></div><div class="pulse-day">'+o.label+'</div></div>';
+      }).join('') + '</div>';
+  }
+
+  var insightsHtml = rep && rep.insights ? rep.insights.map(function(ins){
+    return '<div class="alert '+(ins.type||'warning')+'"><div class="alert-icon">'+(ins.icon||'')+'</div><div><div class="alert-title">'+ins.title+'</div><div class="alert-body">'+ins.body+'</div></div></div>';
+  }).join('') : '';
+
+  var actionsHtml = rep && rep.thisWeekActions ? rep.thisWeekActions.map(function(a){
+    return '<div class="action-item"><div class="action-cb"></div><div class="action-text">'+a+'</div><span class="action-tag tag-q">This week</span></div>';
+  }).join('') : '';
+
+  var longerHtml = rep && rep.longerTermActions ? rep.longerTermActions.map(function(a){
+    return '<div class="action-item"><div class="action-cb"></div><div class="action-text">'+a+'</div><span class="action-tag tag-w">2-4 weeks</span></div>';
+  }).join('') : '';
+
+  document.getElementById('reportView').innerHTML =
+    '<div class="dash-header"><div class="dash-title">'+restaurant.name+'</div>' +
+    '<div class="dash-sub">'+restaurant.postcode+' &middot; '+restaurant.platforms+'</div>' +
+    (rep ? '<div class="report-week">Week ending '+new Date(currentWeek.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>' : '') +
+    '</div>' +
+    weekSelectorHtml +
+    metricsHtml +
+    '<div class="two-col">' +
+      '<div>' +
+        (rep ? '<div class="card" style="margin-bottom:20px;"><div class="card-title">'+(rep.headline||'Weekly analysis')+'</div><div class="card-sub">'+(rep.summary||'')+'</div>' +
+          (insightsHtml ? '<div style="margin-top:4px;">'+insightsHtml+'</div>' : '') + '</div>' : '') +
+        (actionsHtml||longerHtml ? '<div class="card"><div class="card-title">Action plan</div><div class="card-sub">What to do this week and beyond</div>' +
+          actionsHtml + (longerHtml ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">2-4 weeks</div>'+longerHtml : '') +
+          '</div>' : '') +
+      '</div>' +
+      '<div>' +
+        (pulseHtml ? '<div class="card" style="margin-bottom:16px;"><div class="card-title">Order trend</div><div class="card-sub">Last '+Math.min(weekHistory.length,8)+' weeks</div>'+pulseHtml+'</div>' : '') +
+        (weekHistory.length > 1 ? '<div class="card"><div class="card-title">Report history</div><div class="card-sub">Click any week to view</div>' +
+          weekHistory.map(function(w,i){
+            var d = new Date(w.week_ending);
+            var label = 'Week ending '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+            return '<div class="history-item" onclick="selectWeek('+i+')"><div><div class="history-week">'+label+'</div><div class="history-meta">'+fmt(w.orders||0)+' orders &middot; '+fmtGBP(w.revenue||0)+'</div></div>' +
+              (w.report_data ? '<div class="history-score">'+'✓'+'</div>' : '<div style="font-size:11px;color:var(--muted-l);">Pending</div>') + '</div>';
+          }).join('') + '</div>' : '') +
+      '</div>' +
+    '</div>';
 }
-fetch('/api/reports',{headers:{'x-session-token':token}})
+
+function selectWeek(idx) {
+  currentWeekIdx = idx;
+  buildReportView(dashData);
+  showView('report');
+}
+
+function buildAccountView(data) {
+  var user       = data.user || {};
+  var restaurant = data.restaurant;
+  var plan       = user.plan || 'none';
+  var planStatus = user.plan_status || 'inactive';
+  var planLabels = {starter:'Starter - £199/mo', growth:'Growth - £499/mo', partner:'Partner - £999/mo', none:'No active plan'};
+
+  document.getElementById('accountView').innerHTML =
+    '<div class="dash-header"><div class="dash-title">Account</div><div class="dash-sub">Manage your plan and restaurant details</div></div>' +
+    '<div class="card" style="margin-bottom:20px;"><div class="card-title" style="margin-bottom:16px;">Your plan</div>' +
+      '<div class="account-section">' +
+        '<div class="account-row"><div><div class="account-label">Current plan</div><div class="account-value"><span class="plan-badge">'+(planLabels[plan]||plan)+'</span></div></div>' +
+          (plan !== 'none' ? '<button class="btn-sm" onclick="window.location.href='/onboarding'">Change plan</button>' : '<button class="btn-sm" onclick="window.location.href='/onboarding'">Choose a plan</button>') +
+        '</div>' +
+        '<div class="account-row"><div class="account-label">Status</div><div class="account-value" style="color:'+(planStatus==='active'?'var(--green)':'var(--red)')+';">'+(planStatus==='active'?'Active':'Inactive')+'</div></div>' +
+        '<div class="account-row"><div class="account-label">Email</div><div class="account-value">'+(user.email||email)+'</div></div>' +
+        (plan !== 'none' && planStatus === 'active' ? '<div class="account-row"><div class="account-label">Cancel subscription</div><div><button class="btn-sm danger" onclick="cancelSub()">Cancel at period end</button></div></div>' : '') +
+      '</div>' +
+    '</div>' +
+    (restaurant ? '<div class="card"><div class="card-title" style="margin-bottom:16px;">Restaurant</div>' +
+      '<div class="account-section">' +
+        '<div class="account-row"><div class="account-label">Name</div><div class="account-value">'+restaurant.name+'</div></div>' +
+        '<div class="account-row"><div class="account-label">Postcode</div><div class="account-value">'+restaurant.postcode+'</div></div>' +
+        '<div class="account-row"><div class="account-label">Cuisine</div><div class="account-value">'+(restaurant.cuisine||'-')+'</div></div>' +
+        '<div class="account-row"><div class="account-label">Platforms</div><div class="account-value">'+restaurant.platforms+'</div></div>' +
+        '<div class="account-row"><div><div class="account-label">Update credentials</div><div style="font-size:12px;color:var(--muted);">Update your platform login details</div></div><a href="/onboarding" class="btn-sm">Update</a></div>' +
+      '</div></div>' : '');
+}
+
+async function cancelSub() {
+  if (!confirm('Cancel your subscription? You'll keep access until the end of your current billing period.')) return;
+  var r = await fetch('/api/cancel-subscription',{method:'POST',headers:{'x-session-token':token}});
+  var d = await r.json();
+  if (d.ok) alert('Subscription cancelled. You'll keep access until the end of your current period.');
+  else alert(d.error || 'Could not cancel. Please contact us.');
+}
+
+// Load dashboard
+fetch('/api/dashboard', {headers:{'x-session-token':token}})
   .then(function(r){return r.json();})
-  .then(function(d){if(!d.ok){logout();return;}renderReports(d.reports);})
-  .catch(function(){logout();});
+  .then(function(d) {
+    if (!d.ok) { logout(); return; }
+    dashData = d;
+    // Also get user info for account view
+    return fetch('/api/me',{headers:{'x-session-token':token}}).then(function(r){return r.json();}).then(function(me){
+      dashData.user = me;
+      document.getElementById('loadingState').style.display='none';
+      buildReportView(dashData);
+      buildAccountView(dashData);
+      showView('report');
+    });
+  })
+  .catch(function(e){console.error(e);logout();});
 </script>
 </body>
 </html>
