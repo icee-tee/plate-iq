@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Your PlateIQ Report</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1a1a;--ink-s:#3d3d3d;--muted:#6b6b6b;--muted-l:#a0a0a0;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-d:#c47f0a;--amber-p:#fef3dc;--red:#dc2626;--red-p:#fef2f2;--green:#16a34a;--green-p:#f0fdf4;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--r-lg:18px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:64px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+.brand{font-family:var(--serif);font-size:20px;color:var(--ink);}
+.brand span{color:var(--amber);}
+.report{max-width:860px;margin:0 auto;padding:0 0 120px;}
+/* Cover */
+.cover{background:var(--ink);padding:40px 48px 36px;position:relative;}
+.cover::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--amber);}
+.cover-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;}
+.cover-brand{font-size:13px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.04em;}
+.cover-brand span{color:var(--amber);}
+.cover-date{font-size:12px;color:rgba(255,255,255,.25);text-align:right;}
+.cover-main{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;}
+.cover-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:8px;}
+.cover-name{font-family:var(--serif);font-size:clamp(28px,5vw,46px);color:#fff;line-height:1.1;margin-bottom:6px;}
+.cover-meta{font-size:13px;color:rgba(255,255,255,.5);}
+.cover-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}
+.cover-tag{font-size:11px;font-weight:600;padding:4px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);}
+.ring-wrap{text-align:center;flex-shrink:0;}
+.ring-svg{width:110px;height:110px;}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.1);stroke-width:8;}
+.ring-fill{fill:none;stroke:var(--amber);stroke-width:8;stroke-linecap:round;transform:rotate(-90deg);transform-origin:55px 55px;}
+.ring-num{font-family:var(--serif);font-size:26px;fill:#fff;text-anchor:middle;dominant-baseline:middle;}
+.ring-den{font-size:10px;fill:rgba(255,255,255,.35);text-anchor:middle;}
+.ring-label{font-size:10px;font-weight:700;color:var(--amber);margin-top:6px;letter-spacing:.06em;}
+/* Sections */
+.sec{padding:28px 48px;border-bottom:1px solid var(--border);}
+.sec-eye{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:8px;}
+.sec-title{font-family:var(--serif);font-size:20px;color:var(--ink);margin-bottom:18px;}
+/* Score grid */
+.score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.score-cell{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r);padding:14px 12px;text-align:center;}
+.score-num{font-family:var(--serif);font-size:26px;line-height:1;}
+.score-lbl{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.3;}
+.score-bar{height:3px;border-radius:99px;background:var(--border);margin-top:10px;overflow:hidden;}
+.score-fill{height:100%;border-radius:99px;}
+/* Alerts */
+.alert{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;border-radius:var(--r);border-left:3px solid;margin-bottom:10px;}
+.alert.critical{background:var(--red-p);border-color:var(--red);}
+.alert.warning{background:var(--amber-p);border-color:var(--amber);}
+.alert.positive{background:var(--green-p);border-color:var(--green);}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.alert-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.alert-body{font-size:13px;color:var(--ink-s);line-height:1.55;}
+.alert-impact{display:inline-block;font-size:11px;font-weight:700;margin-top:6px;padding:2px 10px;border-radius:99px;}
+.alert.critical .alert-impact{background:rgba(220,38,38,.12);color:var(--red);}
+.alert.warning .alert-impact{background:rgba(232,160,32,.15);color:var(--amber-d);}
+.alert.positive .alert-impact{background:rgba(22,163,74,.12);color:var(--green);}
+/* Lock gate */
+.lock-gate{position:relative;margin-top:24px;}
+.lock-blur{filter:blur(5px);pointer-events:none;user-select:none;opacity:.7;}
+.lock-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(250,248,244,.85);backdrop-filter:blur(2px);border-radius:var(--r-lg);padding:32px;text-align:center;z-index:10;}
+.lock-icon-big{font-size:36px;margin-bottom:16px;}
+.lock-title{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:8px;}
+.lock-sub{font-size:13.5px;color:var(--muted);max-width:380px;margin:0 auto 24px;line-height:1.6;}
+.lock-locked-items{display:flex;flex-direction:column;gap:8px;width:100%;max-width:400px;margin-bottom:24px;}
+.lock-item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border-m);border-radius:var(--r);padding:10px 14px;text-align:left;}
+.lock-item-icon{font-size:16px;flex-shrink:0;}
+.lock-item-title{font-size:13px;font-weight:600;color:var(--ink);}
+.lock-item-preview{font-size:11.5px;color:var(--muted);}
+/* Account form */
+.account-gate{background:var(--card);border:1.5px solid var(--border-m);border-radius:var(--r-lg);padding:28px;margin-top:24px;}
+.ag-title{font-family:var(--serif);font-size:20px;color:var(--ink);margin-bottom:4px;}
+.ag-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.f-group{margin-bottom:14px;}
+.f-group label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;}
+.f-group input{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r);padding:11px 14px;outline:none;width:100%;transition:border-color .15s;}
+.f-group input:focus{border-color:var(--amber);background:#fff;}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.btn-primary{width:100%;font-family:var(--serif);font-size:16px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:14px;cursor:pointer;}
+.btn-primary:hover{background:#2a2a2a;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.form-error{font-size:13px;color:#dc2626;margin-top:8px;display:none;}
+.form-success{font-size:13px;color:var(--green);margin-top:8px;display:none;}
+.sign-in-link{text-align:center;font-size:13px;color:var(--muted);margin-top:12px;}
+.sign-in-link a{color:var(--amber-d);text-decoration:none;font-weight:600;}
+/* Action plan */
+.action-group{margin-bottom:18px;}
+.action-week{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.action-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:var(--r);background:var(--card);border:1px solid var(--border);margin-bottom:6px;}
+.action-cb{width:18px;height:18px;border-radius:5px;border:2px solid var(--border-m);flex-shrink:0;margin-top:1px;}
+.action-text{font-size:13px;color:var(--ink-s);flex:1;}
+.action-tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:auto;flex-shrink:0;}
+.tag-q{background:var(--green-p);color:var(--green);}
+.tag-w{background:var(--amber-p);color:var(--amber-d);}
+.tag-m{background:var(--bg);color:var(--muted);border:1px solid var(--border);}
+/* CTA */
+.cta{background:var(--ink);border-radius:var(--r-lg);padding:28px 32px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;margin:28px 48px 0;}
+.cta-title{font-family:var(--serif);font-size:20px;color:#fff;margin-bottom:4px;}
+.cta-sub{font-size:13px;color:rgba(255,255,255,.5);}
+.cta-btn{font-family:var(--sans);font-size:14px;font-weight:700;background:var(--amber);color:var(--ink);border:none;border-radius:var(--r);padding:14px 24px;cursor:pointer;white-space:nowrap;}
+/* Pulse chart */
+.pulse-wrap{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:22px 20px 16px;}
+.pulse-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;}
+.pulse-total{font-family:var(--serif);font-size:26px;color:var(--ink);}
+.pulse-total span{font-size:13px;font-weight:400;color:var(--muted);}
+.pulse-chart{display:flex;align-items:flex-end;gap:6px;height:90px;}
+.pulse-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;}
+.pulse-bar{width:100%;border-radius:4px 4px 0 0;background:var(--amber);position:relative;min-height:3px;}
+.pulse-bar.low{background:var(--border-m);}
+.pulse-bar.peak{box-shadow:0 0 0 2px var(--amber-d);}
+.pulse-val{font-size:9px;font-weight:700;color:var(--muted);position:absolute;top:-14px;left:50%;transform:translateX(-50%);white-space:nowrap;}
+.pulse-day{font-size:10px;color:var(--muted-l);font-weight:600;}
+.pulse-note{margin-top:12px;font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:var(--r);padding:10px 14px;}
+/* Comp table */
+.comp-table{width:100%;border-collapse:collapse;}
+.comp-table th{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-l);padding:8px 12px;border-bottom:1px solid var(--border);text-align:left;}
+.comp-table td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.comp-table tr.you td{background:var(--amber-p);font-weight:600;}
+.comp-table tr:last-child td{border-bottom:none;}
+.comp-rank{font-family:var(--serif);font-size:16px;color:var(--muted-l);}
+.comp-rank.you{color:var(--amber);}
+.mini-bar{height:4px;border-radius:99px;background:var(--border);overflow:hidden;margin-top:3px;}
+.mini-fill{height:100%;border-radius:99px;background:var(--amber);}
+@media(max-width:640px){.cover{padding:24px;}.cover-main{grid-template-columns:1fr;}.sec{padding:20px;}.score-grid{grid-template-columns:repeat(2,1fr);}.cta{grid-template-columns:1fr;margin:20px;}.f-row{grid-template-columns:1fr;}nav{padding:0 20px;}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="brand">Plate<span>IQ</span></div>
+  <div id="navRight" style="font-size:13px;color:var(--muted);">Loading...</div>
+</nav>
+
+<div class="report" id="report"></div>
+
+<!-- Account creation gate (shown at bottom before locked content) -->
+<div id="accountGate" style="max-width:860px;margin:0 auto;padding:0 48px 80px;display:none;">
+  <div class="account-gate">
+    <div class="ag-title">Save your report &amp; see the rest</div>
+    <div class="ag-sub">Create your free PlateIQ account to unlock your full report and save this audit to your dashboard.</div>
+    <div class="f-row">
+      <div class="f-group"><label>Email</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
+      <div class="f-group"><label>Password</label><input type="password" id="regPwd" placeholder="At least 6 characters"></div>
+    </div>
+    <button class="btn-primary" onclick="register()" id="regBtn">Create free account &amp; unlock →</button>
+    <div class="form-error" id="regError"></div>
+    <div class="form-success" id="regSuccess"></div>
+    <div class="sign-in-link">Already have an account? <a href="/login">Sign in</a></div>
+  </div>
+</div>
+
+<script>
+var reportData = null;
+
+function scoreColor(v) { return v >= 7 ? '#16a34a' : v >= 5 ? '#e8a020' : '#dc2626'; }
+
+function buildReport(d) {
+  var r = d.report;
+  var pct = r.score;
+  var circ = 2 * Math.PI * 46;
+  var dash = circ * (pct / 100);
+  var offset = circ - dash;
+
+  var coverHtml = '<div class="cover">' +
+    '<div class="cover-top"><div class="cover-brand">Plate<span>IQ</span></div><div class="cover-date">Report<br>' + new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) + '</div></div>' +
+    '<div class="cover-main">' +
+      '<div>' +
+        '<div class="cover-label">Restaurant performance report</div>' +
+        '<div class="cover-name">' + (d.restaurantName||'Your Restaurant') + '</div>' +
+        '<div class="cover-meta">' + (d.cuisine?d.cuisine+' \u00b7 ':'') + (d.city||'') + (d.platforms?' \u00b7 '+d.platforms:'') + '</div>' +
+        '<div class="cover-tags">' +
+          (r.dimensions.reviewScore >= 7 ? '<span class="cover-tag" style="border-color:rgba(232,160,32,.4);color:var(--amber);">' + r.dimensions.reviewScore.toFixed(1) + '\u2605 review score</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="ring-wrap">' +
+        '<svg class="ring-svg" viewBox="0 0 110 110"><circle class="ring-bg" cx="55" cy="55" r="46"/>' +
+        '<circle class="ring-fill" cx="55" cy="55" r="46" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '"/>' +
+        '<text class="ring-num" x="55" y="51">' + pct + '</text><text class="ring-den" x="55" y="68">/100</text></svg>' +
+        '<div class="ring-label">' + (r.scoreLabel||'').toUpperCase() + '</div>' +
+      '</div>' +
+    '</div></div>';
+
+  // Scorecard
+  var dims = r.dimensions;
+  var dimList = [
+    {label:'Photo Coverage', v:dims.photoScore},
+    {label:'Menu Structure', v:dims.menuScore},
+    {label:'Pricing Match',  v:dims.pricingScore},
+    {label:'Visibility',     v:dims.visibilityScore},
+    {label:'Review Health',  v:dims.reviewScore}
+  ];
+  var scoreHtml = '<div class="sec"><div class="sec-eye">Performance scorecard</div><div class="sec-title">Where you stand across 5 dimensions</div><div class="score-grid">' +
+    dimList.map(function(d){ var c=scoreColor(d.v); return '<div class="score-cell"><div class="score-num" style="color:'+c+'">' + d.v.toFixed(1) + '</div><div class="score-lbl">' + d.label + '</div><div class="score-bar"><div class="score-fill" style="width:'+Math.round(d.v*10)+'%;background:'+c+';"></div></div></div>'; }).join('') +
+    '</div></div>';
+
+  // Free insights
+  var insightsHtml = '<div class="sec"><div class="sec-eye">This week\'s findings</div><div class="sec-title">What we found analysing your listing</div>' +
+    (r.freeInsights||[]).map(function(ins){
+      return '<div class="alert ' + (ins.type||'warning') + '">' +
+        '<div class="alert-icon">' + (ins.icon||'\uD83D\uDCA1') + '</div>' +
+        '<div><div class="alert-title">' + ins.title + '</div><div class="alert-body">' + ins.body + '</div>' +
+        (ins.impact?'<span class="alert-impact">'+ins.impact+'</span>':'') + '</div></div>';
+    }).join('') + '</div>';
+
+  // Weekly pulse
+  var pulse = r.weeklyPulse;
+  var maxOrders = Math.max.apply(null, (pulse.dayData||[]).map(function(d){return d.orders;}));
+  var pulseHtml = '<div class="sec"><div class="sec-eye">Order volume estimate</div><div class="sec-title">Your estimated weekly trading pattern</div>' +
+    '<div class="pulse-wrap">' +
+      '<div class="pulse-header"><div class="pulse-total">~' + pulse.totalOrders + ' <span>orders/week estimated</span></div>' +
+      '<div style="text-align:right;"><div style="font-size:12px;color:var(--muted);">Est. avg order value</div><div style="font-family:var(--serif);font-size:18px;">\u00a3' + (pulse.avgOrderValue||0).toFixed(2) + '</div></div></div>' +
+      '<div class="pulse-chart">' +
+        (pulse.dayData||[]).map(function(d){
+          var h = maxOrders > 0 ? Math.max(8, Math.round(d.orders/maxOrders*100)) : 8;
+          var cls = d.orders === maxOrders ? 'peak' : d.orders < maxOrders*0.4 ? 'low' : '';
+          return '<div class="pulse-bar-wrap"><div class="pulse-bar ' + cls + '" style="height:'+h+'%;"><span class="pulse-val">'+d.orders+'</span></div><div class="pulse-day">'+d.day+'</div></div>';
+        }).join('') +
+      '</div>' +
+      (pulse.insight ? '<div class="pulse-note"><strong>PlateIQ:</strong> ' + pulse.insight + '</div>' : '') +
+    '</div></div>';
+
+  // Competitor table
+  var compHtml = '<div class="sec"><div class="sec-eye">Competitor analysis</div><div class="sec-title">How you rank locally</div>' +
+    '<table class="comp-table"><thead><tr><th>Rank</th><th>Restaurant</th><th>Score</th><th>Photos</th><th>Rating</th></tr></thead><tbody>' +
+    (r.competitors||[]).map(function(c){
+      return '<tr' + (c.isYou?' class="you"':'') + '>' +
+        '<td><span class="comp-rank' + (c.isYou?' you':'') + '">#' + c.rank + '</span></td>' +
+        '<td><strong>' + c.name + (c.isYou?' \u2190 You':'') + '</strong></td>' +
+        '<td>' + c.score + '<div class="mini-bar"><div class="mini-fill" style="width:'+c.score+'%;' + (c.score>=80?'background:var(--green);':c.score>=65?'':'background:var(--muted-l);') + '"></div></div></td>' +
+        '<td>' + c.photos + '</td><td>' + c.rating + ' \u2605</td></tr>';
+    }).join('') +
+    '</tbody></table>' +
+    (r.competitorGap ? '<div style="margin-top:12px;font-size:12.5px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;"><strong style="color:var(--ink);">Gap to #1:</strong> ' + r.competitorGap + '</div>' : '') +
+    '</div>';
+
+  // Lock gate with locked insights blurred below
+  var lockedHtml = '<div class="sec lock-gate">' +
+    '<div class="lock-blur">' +
+      '<div class="sec-eye">Full recommendations</div><div class="sec-title">5 more things we found</div>' +
+      (r.lockedInsights||[]).map(function(ins){
+        return '<div class="alert warning"><div class="alert-icon">' + ins.icon + '</div><div><div class="alert-title">' + ins.title + '</div><div class="alert-body">' + ins.preview + '</div></div></div>';
+      }).join('') +
+    '</div>' +
+    '<div class="lock-overlay">' +
+      '<div class="lock-icon-big">\uD83D\uDD12</div>' +
+      '<div class="lock-title">Create a free account to unlock</div>' +
+      '<div class="lock-sub">Your full report includes 5 more recommendations, your weekly action checklist, and access to your PlateIQ dashboard.</div>' +
+      '<div class="lock-locked-items">' +
+        (r.lockedInsights||[]).slice(0,3).map(function(ins){
+          return '<div class="lock-item"><div class="lock-item-icon">'+ins.icon+'</div><div><div class="lock-item-title">'+ins.title+'</div><div class="lock-item-preview">'+ins.preview+'</div></div></div>';
+        }).join('') +
+      '</div>' +
+      '<a href="#accountGate" onclick="document.getElementById(\'accountGate\').style.display=\'block\';document.getElementById(\'accountGate\').scrollIntoView({behavior:\'smooth\'});return false;" style="display:inline-block;font-family:var(--sans);font-size:14px;font-weight:700;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:13px 28px;cursor:pointer;text-decoration:none;">Save &amp; unlock full report \u2192</a>' +
+    '</div></div>';
+
+  // Action plan
+  var ap = r.actionPlan || {};
+  var actionHtml = '<div class="sec"><div class="sec-eye">Your action plan</div><div class="sec-title">What to do — and when</div>' +
+    (ap.thisWeek&&ap.thisWeek.length ? '<div class="action-group"><div class="action-week">This week \u2014 highest impact</div>' + ap.thisWeek.map(function(a){return '<div class="action-item"><div class="action-cb"></div><div class="action-text">'+a+'</div><span class="action-tag tag-q">Quick win</span></div>';}).join('') + '</div>' : '') +
+    (ap.twoWeeks&&ap.twoWeeks.length ? '<div class="action-group"><div class="action-week">Next 2 weeks</div>' + ap.twoWeeks.map(function(a){return '<div class="action-item"><div class="action-cb"></div><div class="action-text">'+a+'</div><span class="action-tag tag-w">2 weeks</span></div>';}).join('') + '</div>' : '') +
+    (ap.thisMonth&&ap.thisMonth.length ? '<div class="action-group"><div class="action-week">This month</div>' + ap.thisMonth.map(function(a){return '<div class="action-item"><div class="action-cb"></div><div class="action-text">'+a+'</div><span class="action-tag tag-m">Month</span></div>';}).join('') + '</div>' : '') +
+    '</div>';
+
+  var ctaHtml = '<div class="cta"><div><div class="cta-title">We\'ll implement all of this for you.</div><div class="cta-sub">On the Growth plan, our team logs in and makes every change on this list \u2014 every week.</div></div><button class="cta-btn" onclick="window.location.href=\'/#pricing\'">See plans \u2192</button></div>';
+
+  document.getElementById('report').innerHTML = coverHtml + scoreHtml + insightsHtml + pulseHtml + compHtml + lockedHtml + actionHtml + ctaHtml;
+}
+
+// Load report from sessionStorage
+window.addEventListener('DOMContentLoaded', function() {
+  var stored = sessionStorage.getItem('piq_report');
+  var email  = sessionStorage.getItem('piq_email');
+
+  if (!stored) { window.location.href = '/'; return; }
+  try {
+    reportData = JSON.parse(stored);
+    buildReport(reportData);
+
+    // Pre-fill email in account form
+    if (email) {
+      var emailField = document.getElementById('regEmail');
+      if (emailField) emailField.value = email;
+    }
+
+    // Check if already logged in
+    var token = localStorage.getItem('piq_token');
+    if (token) {
+      fetch('/api/me', { headers: { 'x-session-token': token } })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.ok) {
+            document.getElementById('navRight').innerHTML = '<a href="/dashboard" style="font-size:13px;font-weight:600;color:var(--amber);text-decoration:none;">Go to dashboard \u2192</a>';
+            // Auto-save report
+            fetch('/api/save-report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-session-token': token },
+              body: JSON.stringify({
+                restaurantName: reportData.restaurantName,
+                city: reportData.city,
+                cuisine: reportData.cuisine,
+                platforms: reportData.platforms,
+                url: reportData.url,
+                report: reportData.report
+              })
+            });
+          } else {
+            document.getElementById('navRight').innerHTML = '<a href="/login" style="font-size:13px;color:var(--muted);text-decoration:none;">Sign in</a>';
+            document.getElementById('accountGate').style.display = 'block';
+          }
+        });
+    } else {
+      document.getElementById('navRight').innerHTML = '<a href="/login" style="font-size:13px;color:var(--muted);text-decoration:none;">Sign in</a>';
+      document.getElementById('accountGate').style.display = 'block';
+    }
+  } catch(e) { window.location.href = '/'; }
+});
+
+async function register() {
+  var email = document.getElementById('regEmail').value.trim();
+  var pwd   = document.getElementById('regPwd').value;
+  var errEl = document.getElementById('regError');
+  var okEl  = document.getElementById('regSuccess');
+  errEl.style.display='none'; okEl.style.display='none';
+
+  if (!email||!email.includes('@')) { errEl.textContent='Please enter a valid email.'; errEl.style.display='block'; return; }
+  if (!pwd||pwd.length<6) { errEl.textContent='Password must be at least 6 characters.'; errEl.style.display='block'; return; }
+
+  document.getElementById('regBtn').disabled=true;
+  document.getElementById('regBtn').textContent='Creating account...';
+
+  try {
+    var res = await fetch('/api/register', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email, password: pwd,
+        reportData: {
+          restaurantName: reportData.restaurantName,
+          city: reportData.city,
+          cuisine: reportData.cuisine,
+          platforms: reportData.platforms,
+          url: reportData.url,
+          report: reportData.report
+        }
+      })
+    });
+    var data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    localStorage.setItem('piq_token', data.token);
+    localStorage.setItem('piq_email', email);
+    okEl.textContent='Account created! Redirecting to your dashboard...';
+    okEl.style.display='block';
+    setTimeout(function(){ window.location.href='/dashboard'; }, 1200);
+  } catch(err) {
+    errEl.textContent = err.message || 'Something went wrong. Please try again.';
+    errEl.style.display='block';
+    document.getElementById('regBtn').disabled=false;
+    document.getElementById('regBtn').textContent='Create free account & unlock \u2192';
+  }
+}
+</script>
+</body>
+</html>
