@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Sign in — PlateIQ</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1a1a;--muted:#6b6b6b;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-p:#fef3dc;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+.card{background:var(--card);border:1px solid var(--border-m);border-radius:18px;padding:36px;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.brand{font-family:var(--serif);font-size:22px;text-align:center;margin-bottom:24px;color:var(--ink);}
+.brand span{color:var(--amber);}
+h2{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:4px;}
+p{font-size:13.5px;color:var(--muted);margin-bottom:24px;}
+.f-group{margin-bottom:14px;}
+.f-group label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;}
+.f-group input{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r);padding:12px 14px;outline:none;width:100%;}
+.f-group input:focus{border-color:var(--amber);background:#fff;}
+.btn{width:100%;font-family:var(--serif);font-size:16px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:14px;cursor:pointer;margin-top:6px;}
+.btn:hover{background:#2a2a2a;}
+.err{font-size:13px;color:#dc2626;margin-top:8px;display:none;text-align:center;}
+.link{font-size:13px;color:var(--muted);text-align:center;margin-top:14px;}
+.link a{color:var(--amber);font-weight:600;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">Plate<span>IQ</span></div>
+  <h2>Sign in</h2>
+  <p>Access your restaurant reports and dashboard.</p>
+  <div class="f-group"><label>Email</label><input type="email" id="email" placeholder="your@email.com"></div>
+  <div class="f-group"><label>Password</label><input type="password" id="pwd" placeholder="Your password"></div>
+  <button class="btn" onclick="login()" id="btn">Sign in →</button>
+  <div class="err" id="err"></div>
+  <div class="link">Don't have an account? <a href="/">Get a free audit</a></div>
+</div>
+<script>
+async function login() {
+  var email=document.getElementById('email').value.trim();
+  var pwd=document.getElementById('pwd').value;
+  var err=document.getElementById('err');
+  err.style.display='none';
+  if(!email||!pwd){err.textContent='Please fill in all fields.';err.style.display='block';return;}
+  document.getElementById('btn').textContent='Signing in...';
+  document.getElementById('btn').disabled=true;
+  try {
+    var res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pwd})});
+    var d=await res.json();
+    if(!d.ok)throw new Error(d.error);
+    localStorage.setItem('piq_token',d.token);
+    localStorage.setItem('piq_email',email);
+    window.location.href='/dashboard';
+  } catch(e){
+    err.textContent=e.message||'Login failed.';err.style.display='block';
+    document.getElementById('btn').textContent='Sign in →';document.getElementById('btn').disabled=false;
+  }
+}
+document.addEventListener('keydown',function(e){if(e.key==='Enter')login();});
+</script>
+</body>
+</html>
