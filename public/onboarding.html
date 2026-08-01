@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Get started - PlateIQ</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1a1a;--muted:#6b6b6b;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-d:#c47f0a;--amber-p:#fef3dc;--green:#16a34a;--green-p:#f0fdf4;--red:#dc2626;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--r-lg:18px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:64px;background:#fff;border-bottom:1px solid var(--border);}
+.brand{font-family:var(--serif);font-size:20px;color:var(--ink);}
+.brand span{color:var(--amber);}
+.wrap{max-width:680px;margin:0 auto;padding:48px 24px 80px;}
+.steps-bar{display:flex;align-items:center;gap:0;margin-bottom:48px;}
+.step-dot{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--muted);}
+.step-dot.active{color:var(--ink);}
+.step-dot.done{color:var(--green);}
+.dot{width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0;}
+.step-dot.active .dot{background:var(--amber);color:var(--ink);}
+.step-dot.done .dot{background:var(--green);color:#fff;}
+.step-line{flex:1;height:1px;background:var(--border);margin:0 8px;}
+.step-pane{display:none;}
+.step-pane.active{display:block;}
+h2{font-family:var(--serif);font-size:28px;color:var(--ink);margin-bottom:8px;}
+.sub{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:28px;margin-bottom:16px;}
+.plan-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:24px;}
+.plan-card{border:2px solid var(--border-m);border-radius:var(--r-lg);padding:18px 20px;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;gap:16px;}
+.plan-card:hover{border-color:var(--amber);}
+.plan-card.selected{border-color:var(--amber);background:var(--amber-p);}
+.plan-radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-m);flex-shrink:0;transition:all .15s;}
+.plan-card.selected .plan-radio{border-color:var(--amber);background:var(--amber);}
+.plan-info{flex:1;}
+.plan-name{font-family:var(--serif);font-size:16px;color:var(--ink);margin-bottom:2px;}
+.plan-desc{font-size:12.5px;color:var(--muted);}
+.plan-price{font-family:var(--serif);font-size:20px;color:var(--ink);text-align:right;flex-shrink:0;}
+.plan-price small{font-size:11px;font-family:var(--sans);color:var(--muted);display:block;}
+.f-group{margin-bottom:14px;}
+.f-group label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;}
+.f-group input,.f-group select{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r);padding:11px 14px;outline:none;width:100%;transition:border-color .15s;}
+.f-group input:focus,.f-group select:focus{border-color:var(--amber);background:#fff;}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.platform-cred{background:var(--bg);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.platform-cred-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.btn-primary{font-family:var(--serif);font-size:16px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:13px 28px;cursor:pointer;}
+.btn-primary:hover{background:#2a2a2a;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{font-family:var(--sans);font-size:13.5px;background:transparent;color:var(--muted);border:1.5px solid var(--border-m);border-radius:var(--r);padding:11px 20px;cursor:pointer;margin-right:10px;}
+.err{font-size:13px;color:var(--red);margin-top:8px;display:none;}
+.security-note{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:12px;padding:10px 14px;background:var(--bg);border-radius:var(--r);}
+@media(max-width:640px){.f-row{grid-template-columns:1fr;}nav{padding:0 20px;}.wrap{padding:32px 16px;}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="brand">Plate<span>IQ</span></div>
+  <div style="font-size:13px;color:var(--muted);" id="navEmail"></div>
+</nav>
+<div class="wrap">
+  <div class="steps-bar">
+    <div class="step-dot active" id="sd1"><div class="dot">1</div><span>Choose plan</span></div>
+    <div class="step-line"></div>
+    <div class="step-dot" id="sd2"><div class="dot">2</div><span>Your restaurant</span></div>
+    <div class="step-line"></div>
+    <div class="step-dot" id="sd3"><div class="dot">3</div><span>Platform credentials</span></div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step-pane active" id="step1">
+    <h2>Choose your plan</h2>
+    <p class="sub">You can upgrade or change at any time. All plans include your weekly AI report and performance dashboard.</p>
+    <div class="plan-grid">
+      <div class="plan-card" id="plan-starter" onclick="selectPlan('starter')">
+        <div class="plan-radio" id="radio-starter"></div>
+        <div class="plan-info"><div class="plan-name">Starter</div><div class="plan-desc">Weekly AI report + dashboard. You implement the recommendations.</div></div>
+        <div class="plan-price">&pound;199<small>/ month</small></div>
+      </div>
+      <div class="plan-card" id="plan-growth" onclick="selectPlan('growth')">
+        <div class="plan-radio" id="radio-growth"></div>
+        <div class="plan-info">
+          <div class="plan-name">Growth <span style="font-size:11px;background:var(--amber);color:var(--ink);padding:2px 8px;border-radius:99px;font-family:var(--sans);font-weight:700;margin-left:4px;">Popular</span></div>
+          <div class="plan-desc">Everything in Starter + monthly implementation by our team.</div>
+        </div>
+        <div class="plan-price">&pound;499<small>/ month</small></div>
+      </div>
+      <div class="plan-card" id="plan-partner" onclick="selectPlan('partner')">
+        <div class="plan-radio" id="radio-partner"></div>
+        <div class="plan-info"><div class="plan-name">Partner</div><div class="plan-desc">Full weekly management, strategy calls, dedicated account manager.</div></div>
+        <div class="plan-price">&pound;999<small>/ month</small></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="goStep2()">Continue &rarr;</button>
+    <div class="err" id="step1err"></div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-pane" id="step2">
+    <h2>Your restaurant</h2>
+    <p class="sub">This information appears on your dashboard and helps us tailor your weekly reports.</p>
+    <div class="card">
+      <div class="f-row">
+        <div class="f-group"><label>Restaurant name *</label><input type="text" id="restName" placeholder="e.g. Spice Garden"></div>
+        <div class="f-group"><label>Postcode *</label><input type="text" id="restPostcode" placeholder="e.g. M1 1AE"></div>
+      </div>
+      <div class="f-row">
+        <div class="f-group"><label>Cuisine type</label>
+          <select id="restCuisine">
+            <option value="">Select...</option>
+            <option>Indian</option><option>Chinese</option><option>Italian</option><option>Burgers</option>
+            <option>Pizza</option><option>Turkish / Kebab</option><option>Caribbean</option><option>African</option>
+            <option>Thai</option><option>Sushi</option><option>Middle Eastern</option><option>Fried Chicken</option>
+            <option>Healthy / Salads</option><option>Desserts &amp; Shakes</option><option>Other</option>
+          </select>
+        </div>
+        <div class="f-group"><label>Platforms</label>
+          <select id="restPlatforms">
+            <option>Uber Eats only</option><option>Just Eat only</option><option>Deliveroo only</option>
+            <option>Uber Eats + Just Eat</option><option>Uber Eats + Deliveroo</option>
+            <option>Just Eat + Deliveroo</option><option>All three platforms</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div><button class="btn-secondary" onclick="goStep(1)">Back</button><button class="btn-primary" onclick="goStep3()">Continue &rarr;</button></div>
+    <div class="err" id="step2err"></div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-pane" id="step3">
+    <h2>Platform credentials</h2>
+    <p class="sub">We need these to access your performance data and make changes on your behalf. Only our team can access these.</p>
+    <div class="card">
+      <div id="credFields"></div>
+      <div class="security-note">&#128274; Your credentials are stored securely and only accessed by a PlateIQ team member when working on your account.</div>
+    </div>
+    <div><button class="btn-secondary" onclick="goStep(2)">Back</button><button class="btn-primary" onclick="submitOnboarding()" id="submitBtn">Complete setup &rarr;</button></div>
+    <div class="err" id="step3err"></div>
+  </div>
+</div>
+
+<script>
+var token = localStorage.getItem('piq_token');
+var email = localStorage.getItem('piq_email');
+if (!token) window.location.href = '/login';
+document.getElementById('navEmail').textContent = email || '';
+var selectedPlan = '';
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  ['starter','growth','partner'].forEach(function(p) {
+    document.getElementById('plan-'+p).classList.toggle('selected', p===plan);
+  });
+}
+
+function goStep(n) {
+  [1,2,3].forEach(function(i) {
+    document.getElementById('step'+i).classList.toggle('active', i===n);
+    var sd = document.getElementById('sd'+i);
+    sd.classList.remove('active','done');
+    if (i < n) sd.classList.add('done');
+    else if (i === n) sd.classList.add('active');
+  });
+}
+
+function goStep2() {
+  var err = document.getElementById('step1err'); err.style.display='none';
+  if (!selectedPlan) { err.textContent='Please select a plan.'; err.style.display='block'; return; }
+  goStep(2);
+}
+
+function goStep3() {
+  var err = document.getElementById('step2err'); err.style.display='none';
+  if (!document.getElementById('restName').value.trim()) { err.textContent='Please enter your restaurant name.'; err.style.display='block'; return; }
+  if (!document.getElementById('restPostcode').value.trim()) { err.textContent='Please enter your postcode.'; err.style.display='block'; return; }
+  buildCredFields(); goStep(3);
+}
+
+function buildCredFields() {
+  var platforms = document.getElementById('restPlatforms').value;
+  var list = [];
+  if (platforms.includes('Uber Eats')) list.push({id:'ue', name:'Uber Eats', color:'#06c167'});
+  if (platforms.includes('Just Eat'))  list.push({id:'je', name:'Just Eat',  color:'#ff8000'});
+  if (platforms.includes('Deliveroo')) list.push({id:'de', name:'Deliveroo', color:'#00ccbc'});
+  if (!list.length) list.push({id:'ue', name:'Uber Eats', color:'#06c167'});
+  document.getElementById('credFields').innerHTML = list.map(function(p) {
+    return '<div class="platform-cred"><div class="platform-cred-title" style="color:'+p.color+'">'+p.name+'</div>' +
+      '<div class="f-row"><div class="f-group"><label>Login email</label><input type="email" id="cred-'+p.id+'-email" placeholder="manager@restaurant.com"></div>' +
+      '<div class="f-group"><label>Password</label><input type="password" id="cred-'+p.id+'-pwd" placeholder="Your platform password"></div></div>' +
+      '<div class="f-group"><label>Notes (optional)</label><input type="text" id="cred-'+p.id+'-notes" placeholder="e.g. 2FA method, restaurant ID..."></div></div>';
+  }).join('');
+}
+
+async function submitOnboarding() {
+  var err = document.getElementById('step3err'); err.style.display='none';
+  var btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Saving...';
+  try {
+    var rr = await fetch('/api/restaurant', {
+      method:'POST', headers:{'Content-Type':'application/json','x-session-token':token},
+      body: JSON.stringify({name:document.getElementById('restName').value.trim(), postcode:document.getElementById('restPostcode').value.trim(), cuisine:document.getElementById('restCuisine').value, platforms:document.getElementById('restPlatforms').value})
+    });
+    var rd = await rr.json();
+    if (!rd.ok) throw new Error(rd.error);
+    var credList = [];
+    [['ue','Uber Eats'],['je','Just Eat'],['de','Deliveroo']].forEach(function(pair) {
+      var el = document.getElementById('cred-'+pair[0]+'-email');
+      if (!el) return;
+      credList.push({platform:pair[1], login_email:el.value.trim(), login_password:document.getElementById('cred-'+pair[0]+'-pwd').value, notes:document.getElementById('cred-'+pair[0]+'-notes').value.trim()});
+    });
+    await fetch('/api/credentials', {method:'POST', headers:{'Content-Type':'application/json','x-session-token':token}, body:JSON.stringify({credentials:credList})});
+    if (selectedPlan) {
+      var cr = await fetch('/api/checkout', {method:'POST', headers:{'Content-Type':'application/json','x-session-token':token}, body:JSON.stringify({plan:selectedPlan})});
+      var cd = await cr.json();
+      if (cd.ok && cd.checkoutUrl) { window.location.href = cd.checkoutUrl; return; }
+    }
+    window.location.href = '/dashboard';
+  } catch(e) { err.textContent=e.message||'Something went wrong.'; err.style.display='block'; btn.disabled=false; btn.textContent='Complete setup &rarr;'; }
+}
+try {
+  var interest = JSON.parse(localStorage.getItem('piq_interest')||'null');
+  if (interest) {
+    if (interest.plan) selectPlan(interest.plan);
+    if (interest.restaurantName) document.getElementById('restName').value = interest.restaurantName;
+    if (interest.postcode) document.getElementById('restPostcode').value = interest.postcode;
+  }
+} catch(e) {}
+</script>
+</body>
+</html>
