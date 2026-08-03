@@ -102,18 +102,72 @@ tr:hover td{background:var(--bg);}
     <div id="dataModalRestaurant" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></div>
     <input type="hidden" id="dm-restId">
     <div class="f-group"><label>Week ending (Sunday) *</label><input type="date" id="dm-week"></div>
+
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--border);">Performance numbers</div>
     <div class="f-row">
       <div class="f-group"><label>Orders *</label><input type="number" id="dm-orders" placeholder="e.g. 312"></div>
       <div class="f-group"><label>Revenue (&pound;) *</label><input type="number" step="0.01" id="dm-revenue" placeholder="e.g. 7580.00"></div>
     </div>
     <div class="f-row">
       <div class="f-group"><label>Avg order value (&pound;)</label><input type="number" step="0.01" id="dm-aov" placeholder="e.g. 24.30"></div>
-      <div class="f-group"><label>Current rating</label><input type="number" step="0.1" min="1" max="5" id="dm-rating" placeholder="e.g. 4.6"></div>
+      <div class="f-group"><label>Current star rating</label><input type="number" step="0.1" min="1" max="5" id="dm-rating" placeholder="e.g. 4.6"></div>
     </div>
     <div class="f-row">
       <div class="f-group"><label>New reviews this week</label><input type="number" id="dm-reviews" placeholder="e.g. 8"></div>
-      <div class="f-group"><label>Notes for Claude</label><input type="text" id="dm-notes" placeholder="e.g. ran 20% off promo"></div>
+      <div class="f-group"><label>Unanswered reviews</label><input type="number" id="dm-unanswered" placeholder="e.g. 3"></div>
     </div>
+
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--border);">Listing audit (from their account)</div>
+    <div class="f-row">
+      <div class="f-group"><label>Total menu items</label><input type="number" id="dm-total-items" placeholder="e.g. 24"></div>
+      <div class="f-group"><label>Items WITH photos</label><input type="number" id="dm-photo-items" placeholder="e.g. 8"></div>
+    </div>
+    <div class="f-row">
+      <div class="f-group"><label>Header/banner photo</label>
+        <select id="dm-header-photo">
+          <option value="">-- select --</option>
+          <option>Good quality</option>
+          <option>Needs updating</option>
+          <option>Missing</option>
+        </select>
+      </div>
+      <div class="f-group"><label>Item descriptions</label>
+        <select id="dm-descriptions">
+          <option value="">-- select --</option>
+          <option>None</option>
+          <option>Some (under 50%)</option>
+          <option>Most (over 50%)</option>
+          <option>All items</option>
+        </select>
+      </div>
+    </div>
+    <div class="f-row">
+      <div class="f-group"><label>Active promotion running</label>
+        <select id="dm-promotion">
+          <option value="">-- select --</option>
+          <option>Yes - discount %</option>
+          <option>Yes - bundle deal</option>
+          <option>Yes - free item</option>
+          <option>No promotion</option>
+        </select>
+      </div>
+      <div class="f-group"><label>Menu categories</label><input type="number" id="dm-categories" placeholder="e.g. 6 sections"></div>
+    </div>
+    <div class="f-row">
+      <div class="f-group"><label>Featured items set</label>
+        <select id="dm-featured">
+          <option value="">-- select --</option>
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </div>
+      <div class="f-group"><label>Platform search ranking</label><input type="text" id="dm-ranking" placeholder="e.g. #4 for Indian in M1"></div>
+    </div>
+
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--border);">Your notes for Claude</div>
+    <div class="f-group"><label>What you changed this week</label><input type="text" id="dm-changed" placeholder="e.g. Added 4 photos, renamed Combo 1 to Chicken Tikka Meal"></div>
+    <div class="f-group"><label>What you noticed / competitor intel</label><input type="text" id="dm-noticed" placeholder="e.g. Top competitor dropped min order to £12, we should match"></div>
+    <div class="f-group"><label>Any other notes for the report</label><input type="text" id="dm-notes" placeholder="e.g. Ran 20% off promo Tue-Wed, orders spiked Friday"></div>
     <button class="btn-primary" onclick="saveData()" id="saveDataBtn">Save data</button>
     <div id="saveDataMsg" style="display:none;"></div>
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
@@ -228,7 +282,7 @@ function openDataModal(restId, restName) {
   var d = new Date();
   d.setDate(d.getDate() - d.getDay());
   document.getElementById('dm-week').value = d.toISOString().split('T')[0];
-  ['dm-orders','dm-revenue','dm-aov','dm-rating','dm-reviews','dm-notes'].forEach(function(id){
+  ['dm-orders','dm-revenue','dm-aov','dm-rating','dm-reviews','dm-unanswered','dm-total-items','dm-photo-items','dm-header-photo','dm-descriptions','dm-promotion','dm-categories','dm-featured','dm-ranking','dm-changed','dm-noticed','dm-notes'].forEach(function(id){
     document.getElementById(id).value = '';
   });
   document.getElementById('saveDataMsg').style.display = 'none';
@@ -245,18 +299,30 @@ async function saveData() {
   var msg = document.getElementById('saveDataMsg');
   btn.disabled = true; btn.textContent = 'Saving...'; msg.style.display = 'none';
   try {
+    function gv(id){ var el=document.getElementById(id); return el ? el.value : ''; }
     var res = await fetch('/api/admin/weekly-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
       body: JSON.stringify({
-        restaurantId: document.getElementById('dm-restId').value,
-        weekEnding:   document.getElementById('dm-week').value,
-        orders:       document.getElementById('dm-orders').value,
-        revenue:      document.getElementById('dm-revenue').value,
-        aov:          document.getElementById('dm-aov').value,
-        rating:       document.getElementById('dm-rating').value,
-        newReviews:   document.getElementById('dm-reviews').value,
-        notes:        document.getElementById('dm-notes').value
+        restaurantId:  gv('dm-restId'),
+        weekEnding:    gv('dm-week'),
+        orders:        gv('dm-orders'),
+        revenue:       gv('dm-revenue'),
+        aov:           gv('dm-aov'),
+        rating:        gv('dm-rating'),
+        newReviews:    gv('dm-reviews'),
+        unansweredReviews: gv('dm-unanswered'),
+        totalItems:    gv('dm-total-items'),
+        photoItems:    gv('dm-photo-items'),
+        headerPhoto:   gv('dm-header-photo'),
+        descriptions:  gv('dm-descriptions'),
+        promotion:     gv('dm-promotion'),
+        categories:    gv('dm-categories'),
+        featured:      gv('dm-featured'),
+        ranking:       gv('dm-ranking'),
+        whatChanged:   gv('dm-changed'),
+        whatNoticed:   gv('dm-noticed'),
+        notes:         gv('dm-notes')
       })
     });
     var d = await res.json();
