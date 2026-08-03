@@ -137,17 +137,36 @@ var adminPw = '';
 
 function unlockAdmin() {
   var pw = document.getElementById('adminPw').value;
-  document.getElementById('pwErr').style.display='none';
-  fetch('/api/admin/stats', {headers:{'x-admin-password':pw}})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      if (!d.ok) { document.getElementById('pwErr').style.display='block'; return; }
-      adminPw = pw;
-      document.getElementById('pwGate').style.display='none';
-      document.getElementById('adminPanel').style.display='block';
-      document.getElementById('navNote').textContent='Logged in as admin';
-      renderStats(d.stats);
-      loadClients();
+  var errEl = document.getElementById('pwErr');
+  errEl.style.display='none';
+  errEl.textContent='Incorrect password.';
+
+  // First check the server is alive
+  fetch('/health')
+    .then(function(r){ return r.json(); })
+    .then(function(h){
+      var dbNote = h.db ? '' : ' (No DB — running in demo mode)';
+      // Now try admin auth
+      return fetch('/api/admin/stats', {headers:{'x-admin-password':pw}})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.ok) {
+            errEl.textContent = d.error || 'Incorrect password.';
+            errEl.style.display='block';
+            return;
+          }
+          adminPw = pw;
+          document.getElementById('pwGate').style.display='none';
+          document.getElementById('adminPanel').style.display='block';
+          document.getElementById('navNote').textContent='Admin' + dbNote;
+          if (d.warning) document.getElementById('navNote').textContent += ' ⚠ ' + d.warning;
+          renderStats(d.stats);
+          loadClients();
+        });
+    })
+    .catch(function(e){
+      errEl.textContent = 'Cannot reach server: ' + e.message;
+      errEl.style.display='block';
     });
 }
 
