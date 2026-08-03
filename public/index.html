@@ -86,7 +86,68 @@ h1 em{font-style:italic;color:var(--amber);}
 .progress-bar{margin-top:24px;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
 .progress-fill{height:100%;background:var(--amber);border-radius:99px;width:0%;transition:width .6s ease;}
 footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-size:12px;color:var(--muted-l);}
-@media(max-width:700px){.how-grid,.pricing-grid{grid-template-columns:1fr;}.f-row{grid-template-columns:1fr;}nav{padding:0 20px;}.hero{padding:52px 20px 40px;}.pricing-section,.how{padding:48px 20px;}}
+
+    nav{padding:0 16px;}
+    .nav-cta{padding:7px 14px;font-size:12px;}
+    .hero{padding:40px 16px 32px;}
+    .hero-inner{max-width:100%;}
+    h1{font-size:32px !important;line-height:1.1;}
+    .hero-sub{font-size:14px;margin-bottom:28px;}
+    .eyebrow{font-size:10px;}
+    .form-card{margin:0 0 48px;padding:20px 16px;border-radius:12px;}
+    .step-label{font-size:9px;}
+    .platform-pill{font-size:12px;padding:8px 6px;}
+    .pill-dot{width:8px;height:8px;}
+    .excl-btn{font-size:11.5px;padding:7px 6px;}
+    section[style*="padding:0 24px"]{padding:0 16px 40px !important;}
+    .how{padding:48px 16px;}
+    .pricing-section{padding:48px 16px;}
+    .pricing-inner{padding:0;}
+    /* What's inside section */
+    section[style*="padding:72px 48px;max-width:960px"]{padding:48px 16px !important;max-width:100% !important;}
+    /* Report cards 1 col on mobile */
+    [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
+    /* Before/after table */
+    [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
+  }
+  @media(max-width:480px){
+    h1{font-size:28px !important;}
+    .metric-grid{grid-template-columns:1fr 1fr;}
+    .platform-grid{gap:6px;}
+  }
+
+  @media(max-width:768px){
+    nav{padding:0 16px;}
+    .hero{padding:48px 16px 36px;}
+    h1{font-size:32px;line-height:1.12;}
+    .hero-sub{font-size:15px;margin-bottom:28px;}
+    .form-card{padding:20px 16px;margin:0 0 48px;}
+    .step-label{font-size:9px;}
+    .platform-grid{grid-template-columns:repeat(3,1fr);gap:6px;}
+    .platform-pill{font-size:11.5px;padding:8px 6px;gap:4px;}
+    .pill-dot{width:8px;height:8px;}
+    .excl-row{padding:12px;}
+    .excl-btns{flex-direction:column;gap:6px;}
+    .excl-btn{padding:10px;}
+    .f-group input,.f-group select{font-size:16px;} /* prevent iOS zoom */
+    .f-row{grid-template-columns:1fr;}
+    .how{padding:48px 16px;}
+    .how-grid{grid-template-columns:1fr;gap:28px;}
+    .how h2{font-size:28px;}
+    .pricing-section{padding:48px 16px;}
+    .pricing-grid{grid-template-columns:1fr;}
+    .pricing-section h2{font-size:28px;}
+    /* Whats inside section */
+    section[style*="padding:72px 48px"]{padding:48px 16px !important;}
+    div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;display:grid !important;}
+    /* Before/after table */
+    div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
+    footer{padding:20px 16px;flex-direction:column;gap:8px;text-align:center;}
+  }
+  @media(max-width:480px){
+    h1{font-size:28px;}
+    .platform-pill{font-size:11px;padding:7px 4px;}
+  }
 </style>
 </head>
 <body>
@@ -158,7 +219,7 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
 
 
 <hr style="border:none;border-top:1px solid var(--border);">
-<section style="padding:72px 48px;max-width:960px;margin:0 auto;">
+<section style="padding:72px 48px;max-width:960px;margin:0 auto;" id="whatsInsideSection">
   <div style="text-align:center;margin-bottom:48px;">
     <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">What you get</div>
     <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,40px);color:var(--ink);margin-bottom:12px;">Your weekly performance dashboard</h2>
@@ -262,7 +323,7 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
 <hr style="border:none;border-top:1px solid var(--border);">
 
 <!-- What's inside section -->
-<section style="padding:72px 48px;max-width:960px;margin:0 auto;">
+<section style="padding:72px 48px;max-width:960px;margin:0 auto;" id="whatsInsideSection">
   <div style="text-align:center;margin-bottom:16px;">
     <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">What's inside</div>
     <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,42px);color:var(--ink);line-height:1.1;margin-bottom:12px;">Everything your competitors<br><em style="font-style:italic;color:var(--amber);">don't want you to know.</em></h2>
@@ -278,7 +339,7 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
   </div>
 
   <!-- Report preview cards -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:48px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:48px;">
 
     <!-- Card 1: Score -->
     <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;">
@@ -342,35 +403,35 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
 
   <!-- Before / After -->
   <div style="background:var(--ink);border-radius:var(--r-lg);overflow:hidden;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;min-width:0;">
       <div style="padding:14px 20px;font-family:var(--sans);font-size:13px;font-weight:700;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);">&#10060; Without PlateIQ</div>
       <div style="padding:14px 20px;font-family:var(--sans);font-size:13px;font-weight:700;background:var(--amber);color:var(--ink);">&#10003; With PlateIQ</div>
     </div>
     <div>
       <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Photos</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">4 of 18 items have photos <span style="font-size:10px;font-weight:700;background:rgba(220,38,38,.2);color:#f87171;padding:2px 7px;border-radius:99px;">-78%</span></div>
-        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">18 of 18 &mdash; full coverage <span style="font-size:10px;font-weight:700;background:rgba(232,160,32,.2);color:var(--amber);padding:2px 7px;border-radius:99px;">Done</span></div>
+        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">4 of 18 items have photos <span style="font-size:10px;font-weight:700;background:rgba(220,38,38,.2);color:#f87171;padding:2px 7px;border-radius:99px;">-78%</span></div>
+        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">18 of 18 &mdash; full coverage <span style="font-size:10px;font-weight:700;background:rgba(232,160,32,.2);color:var(--amber);padding:2px 7px;border-radius:99px;">Done</span></div>
       </div>
       <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Menu</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">&ldquo;Combo 1&rdquo;, &ldquo;Combo 2&rdquo; &mdash; no descriptions</div>
-        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">Named items, descriptions, clear upsells</div>
+        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">&ldquo;Combo 1&rdquo;, &ldquo;Combo 2&rdquo; &mdash; no descriptions</div>
+        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">Named items, descriptions, clear upsells</div>
       </div>
       <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Orders</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">~47 orders/week <span style="font-size:10px;font-weight:700;background:rgba(220,38,38,.2);color:#f87171;padding:2px 7px;border-radius:99px;">Below avg</span></div>
-        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">~71 orders/week projected <span style="font-size:10px;font-weight:700;background:rgba(232,160,32,.2);color:var(--amber);padding:2px 7px;border-radius:99px;">+51%</span></div>
+        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">~47 orders/week <span style="font-size:10px;font-weight:700;background:rgba(220,38,38,.2);color:#f87171;padding:2px 7px;border-radius:99px;">Below avg</span></div>
+        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">~71 orders/week projected <span style="font-size:10px;font-weight:700;background:rgba(232,160,32,.2);color:var(--amber);padding:2px 7px;border-radius:99px;">+51%</span></div>
       </div>
       <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Promotions</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">No active offers running</div>
-        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">Strategic weekly offers scheduled &amp; live</div>
+        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">No active offers running</div>
+        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">Strategic weekly offers scheduled &amp; live</div>
       </div>
       <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Reviews</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">12 unanswered reviews in last 30 days</div>
-        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">100% response rate &mdash; managed weekly</div>
+        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">12 unanswered reviews in last 30 days</div>
+        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">100% response rate &mdash; managed weekly</div>
       </div>
     </div>
   </div>
