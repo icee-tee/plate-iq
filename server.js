@@ -182,9 +182,15 @@ async function generateReport(restaurant, weekData, history) {
     `Week ending ${h.week_ending}: ${h.orders} orders, £${h.revenue} revenue, AOV £${h.aov}, rating ${h.rating}`
   ).join('\n');
 
+  const audit = weekData.listing_audit || {};
+
+  const photoStr = audit.totalItems && audit.photoItems
+    ? `${audit.photoItems} of ${audit.totalItems} items have photos (${Math.round(audit.photoItems/audit.totalItems*100)}% coverage)`
+    : 'Not recorded';
+
   const prompt = `You are a specialist in restaurant delivery platform optimisation — Uber Eats, Just Eat, and Deliveroo in the UK.
 
-Generate a detailed weekly performance report for this restaurant.
+Generate a detailed, SPECIFIC weekly performance report for this restaurant. Every insight must reference their actual numbers and listing details. Do NOT give generic advice.
 
 RESTAURANT:
 Name: ${restaurant.name}
@@ -192,17 +198,35 @@ Postcode: ${restaurant.postcode || 'not provided'}
 Cuisine: ${restaurant.cuisine || 'not specified'}
 Platforms: ${restaurant.platforms || 'not specified'}
 
-THIS WEEK'S DATA (week ending ${weekData.week_ending}):
+THIS WEEK'S PERFORMANCE (week ending ${weekData.week_ending}):
 - Orders: ${weekData.orders}
 - Revenue: £${weekData.revenue}
 - Average order value: £${weekData.aov}
-- Current rating: ${weekData.rating}
-- New reviews this week: ${weekData.new_reviews || 0}
-- Notes from our team: ${weekData.notes || 'none'}
+- Current star rating: ${weekData.rating}
+- New reviews: ${weekData.new_reviews || 0}
+- Unanswered reviews: ${audit.unansweredReviews || 0}
 
 TREND vs LAST WEEK:
 - Orders: ${orderDelta >= 0 ? '+' : ''}${orderDelta} (${trend})
 - Revenue: ${revDelta >= 0 ? '+' : ''}£${Math.abs(revDelta)}
+
+LISTING AUDIT (from their ${restaurant.platforms} account this week):
+- Photo coverage: ${photoStr}
+- Header/banner photo: ${audit.headerPhoto || 'not checked'}
+- Item descriptions: ${audit.descriptions || 'not checked'}
+- Menu categories: ${audit.categories ? audit.categories + ' sections' : 'not checked'}
+- Featured items set: ${audit.featured || 'not checked'}
+- Active promotion: ${audit.promotion || 'none'}
+- Platform search ranking: ${audit.ranking || 'not checked'}
+
+WHAT WE DID THIS WEEK:
+${audit.whatChanged || 'Nothing noted'}
+
+WHAT WE NOTICED:
+${audit.whatNoticed || 'Nothing noted'}
+
+ADDITIONAL NOTES:
+${weekData.notes || 'None'}
 
 HISTORICAL DATA (last 8 weeks):
 ${historyStr || 'First week — no historical data yet'}
@@ -619,12 +643,29 @@ app.post('/api/admin/weekly-data', requireAdmin, async (req, res) => {
   if (!restaurantId || !weekEnding) return res.status(400).json({ ok: false, error: 'restaurantId and weekEnding required.' });
   if (!pgPool) return res.json({ ok: true });
   try {
+    const {
+      unansweredReviews, totalItems, photoItems, headerPhoto,
+      descriptions, promotion, categories, featured, ranking,
+      whatChanged, whatNoticed
+    } = req.body;
+
+    // Ensure listing_audit column exists
+    await pgPool.query(`ALTER TABLE weekly_data ADD COLUMN IF NOT EXISTS listing_audit JSONB`).catch(()=>{});
+    await pgPool.query(`ALTER TABLE weekly_data ADD COLUMN IF NOT EXISTS team_notes TEXT`).catch(()=>{});
+
+    const listingAudit = {
+      unansweredReviews, totalItems, photoItems, headerPhoto,
+      descriptions, promotion, categories, featured, ranking,
+      whatChanged, whatNoticed
+    };
+
     await pgPool.query(`
-      INSERT INTO weekly_data (restaurant_id, week_ending, orders, revenue, aov, rating, new_reviews, notes)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      INSERT INTO weekly_data (restaurant_id, week_ending, orders, revenue, aov, rating, new_reviews, notes, listing_audit, team_notes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
       ON CONFLICT (restaurant_id, week_ending) DO UPDATE SET
-        orders=$3, revenue=$4, aov=$5, rating=$6, new_reviews=$7, notes=$8
-    `, [restaurantId, weekEnding, orders, revenue, aov, rating, newReviews || 0, notes || null]);
+        orders=$3, revenue=$4, aov=$5, rating=$6, new_reviews=$7, notes=$8, listing_audit=$9, team_notes=$10
+    `, [restaurantId, weekEnding, orders, revenue, aov, rating, newReviews||0, notes||null,
+        JSON.stringify(listingAudit), [whatChanged,whatNoticed,notes].filter(Boolean).join(' | ') || null]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
