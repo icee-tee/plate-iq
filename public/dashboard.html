@@ -9,7 +9,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;}
 /* Nav */
-nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;width:100%;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
 .brand{font-family:var(--serif);font-size:20px;color:var(--ink);}
 .brand span{color:var(--amber);}
 .nav-links{display:flex;align-items:center;gap:4px;}
@@ -19,7 +19,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .nav-email{font-size:12.5px;color:var(--muted);}
 .btn-logout{font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 10px;}
 /* Layout */
-.wrap{max-width:1000px;margin:0 auto;padding:36px 24px 80px;}
+.wrap{max-width:1200px;margin:0 auto;padding:36px 40px 80px;}
 /* Header */
 .dash-header{margin-bottom:32px;}
 .dash-title{font-family:var(--serif);font-size:clamp(22px,3vw,32px);color:var(--ink);margin-bottom:4px;}
@@ -265,12 +265,13 @@ function buildReportView(data) {
     '</div>' +
     weekSelectorHtml +
     metricsHtml +
+    buildTrendChart(weekHistory, 'orders') +
     '<div class="two-col">' +
       '<div>' +
         (rep ? '<div class="card" style="margin-bottom:20px;"><div class="card-title">'+(rep.headline||'Weekly analysis')+'</div><div class="card-sub">'+(rep.summary||'')+'</div>' +
           (insightsHtml ? '<div style="margin-top:4px;">'+insightsHtml+'</div>' : '') + '</div>' : '') +
-        (actionsHtml||longerHtml ? '<div class="card"><div class="card-title">Action plan</div><div class="card-sub">What to do this week and beyond</div>' +
-          actionsHtml + (longerHtml ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">2-4 weeks</div>'+longerHtml : '') +
+        (actionsHtml||longerHtml ? '<div class="card"><div class="card-title">Action checklist</div><div class="card-sub">Tick off as you complete — resets each week</div>' +
+          buildChecklist(rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], currentWeek.week_ending) +
           '</div>' : '') +
       '</div>' +
       '<div>' +
@@ -328,6 +329,92 @@ async function cancelSub() {
   if (d.ok) alert('Subscription cancelled. You will keep access until the end of your current period.');
   else alert(d.error || 'Could not cancel. Please contact us.');
 }
+
+
+  // Build trend chart
+  function buildTrendChart(history, metric) {
+    if (!history || history.length < 2) return '';
+    var data = history.slice(0,12).reverse();
+    var vals = data.map(function(w){ return Number(w[metric]||0); });
+    var maxV = Math.max.apply(null, vals) || 1;
+    var tabs = ['orders','revenue','aov','rating'];
+    var tabLabels = {orders:'Orders',revenue:'Revenue',aov:'Avg order',rating:'Rating'};
+    var tabsHtml = tabs.map(function(t){
+      return '<button class="trend-tab'+(t===metric?' active':'')+'" onclick="reloadChart(this,\''+t+'\')">'+tabLabels[t]+'</button>';
+    }).join('');
+    var barsHtml = data.map(function(w,i){
+      var v = Number(w[metric]||0);
+      var h = Math.max(6, Math.round(v/maxV*100));
+      var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      return '<div class="chart-bar-wrap"><div class="chart-val">'+(metric==='revenue'?'\u00a3':'')+fmt(v)+'</div><div class="chart-bar" style="height:'+h+'%"></div><div class="chart-label">'+lbl+'</div></div>';
+    }).join('');
+    return '<div class="trend-chart-wrap" id="trendChart">' +
+      '<div class="trend-chart-title">Performance trend</div>' +
+      '<div class="trend-chart-sub">Last '+data.length+' weeks</div>' +
+      '<div class="trend-tabs" id="trendTabs">'+tabsHtml+'</div>' +
+      '<div class="chart-bars" id="chartBars">'+barsHtml+'</div>' +
+    '</div>';
+  }
+
+  function reloadChart(btn, metric) {
+    document.querySelectorAll('.trend-tab').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    var bars = document.getElementById('chartBars');
+    if (!bars || !dashData) return;
+    var history = dashData.history || [];
+    var data = history.slice(0,12).reverse();
+    var vals = data.map(function(w){ return Number(w[metric]||0); });
+    var maxV = Math.max.apply(null, vals) || 1;
+    bars.innerHTML = data.map(function(w){
+      var v = Number(w[metric]||0);
+      var h = Math.max(6, Math.round(v/maxV*100));
+      var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      return '<div class="chart-bar-wrap"><div class="chart-val">'+(metric==='revenue'?'\u00a3':'')+fmt(v)+'</div><div class="chart-bar" style="height:'+h+'%"></div><div class="chart-label">'+lbl+'</div></div>';
+    }).join('');
+  }
+
+  // Build ticked checklist
+  function buildChecklist(thisWeek, longerTerm, weekEnding) {
+    var key = 'piq_checks_' + weekEnding;
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
+
+    function checkItem(text, tag, tagCls) {
+      var id = 'chk_' + text.replace(/\W/g,'').slice(0,20);
+      var done = !!saved[id];
+      return '<div class="checklist-item'+(done?' done':'')+'" id="'+id+'" onclick="toggleCheck(this,\''+key+'\')">' +
+        '<div class="check-box">'+(done?'&#10003;':'')+'</div>' +
+        '<div class="check-text">'+text+'</div>' +
+        '<span class="check-tag '+tagCls+'">'+tag+'</span>' +
+      '</div>';
+    }
+
+    var html = '';
+    if (thisWeek.length) {
+      html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">This week</div>';
+      html += thisWeek.map(function(a){ return checkItem(a,'Now','tag-now'); }).join('');
+    }
+    if (longerTerm.length) {
+      html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">2-4 weeks</div>';
+      html += longerTerm.map(function(a){ return checkItem(a,'Soon','tag-week'); }).join('');
+    }
+    return html;
+  }
+
+  function toggleCheck(el, key) {
+    el.classList.toggle('done');
+    var id = el.id;
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
+    if (el.classList.contains('done')) {
+      saved[id] = true;
+      el.querySelector('.check-box').innerHTML = '&#10003;';
+    } else {
+      delete saved[id];
+      el.querySelector('.check-box').innerHTML = '';
+    }
+    try { localStorage.setItem(key, JSON.stringify(saved)); } catch(e){}
+  }
 
 // Load dashboard
 fetch('/api/dashboard', {headers:{'x-session-token':token}})
