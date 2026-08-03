@@ -337,6 +337,109 @@ async function handleStripeWebhook(req, res) {
 // API ROUTES
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ── Free snapshot helpers ─────────────────────────────────────────────────────
+async function fetchPageContent(url) {
+  if (!url) return null;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PlateIQ/1.0)' } });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const clean = html
+      .replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ')
+      .replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ')
+      .replace(/\s{2,}/g,' ').trim().slice(0, 3000);
+    return clean || null;
+  } catch(e) { console.warn('[fetch-page]', e.message); return null; }
+}
+
+async function runFreeSnapshot(input, pageContent) {
+  if (!anthropic) return generateDemoSnapshot(input);
+
+  const scrapedSection = pageContent
+    ? `SCRAPED FROM PUBLIC LISTING:\n---\n${pageContent}\n---\nAnalyse ONLY what is present. Do not invent ratings, order volumes, or competitor names.`
+    : `SCRAPE RESULT: Could not read the page (likely JavaScript-rendered). Do NOT invent details. Only infer from name, postcode, and cuisine.`;
+
+  const prompt = `You are a UK restaurant delivery specialist. A restaurant wants a free snapshot. Be honest — only reference things you actually see or can genuinely infer.
+
+RESTAURANT: ${input.restaurantName} | Postcode: ${input.postcode||'unknown'} | Cuisine: ${input.cuisine||'not specified'} | Platforms: ${input.platforms||'not specified'} | Exclusive: ${input.exclusive==='yes'?'Yes':'No'}
+
+${scrapedSection}
+
+STRICT RULES:
+- Never invent ratings, competitor names, or order volumes
+- If you saw menu categories in the scrape, name them specifically
+- If you saw delivery time or minimum order, cite those exact values
+- If scrape failed, still give 3 useful honest inferences from cuisine + postcode alone
+- Do not say "I cannot see" — just give what you CAN say
+
+Respond ONLY with valid JSON, no markdown:
+{
+  "scrapedSuccessfully": <true|false>,
+  "whatWeFound": "<one honest sentence about what data we got>",
+  "score": <integer 40-79>,
+  "scoreLabel": "<3-5 words>",
+  "scoreSub": "<one sentence referencing only real observations>",
+  "freeInsights": [
+    { "type": "critical|warning|positive", "icon": "<emoji>", "title": "<specific headline>", "body": "<2-3 sentences, concrete and useful>", "impact": "<honest estimate or empty string>" },
+    { "type": "critical|warning|positive", "icon": "<emoji>", "title": "<specific headline>", "body": "<2-3 sentences>", "impact": "" },
+    { "type": "critical|warning|positive", "icon": "<emoji>", "title": "<specific headline>", "body": "<2-3 sentences>", "impact": "" }
+  ],
+  "lockedItems": [
+    {"icon": "📊", "title": "Your actual weekly order volume and revenue"},
+    {"icon": "📈", "title": "Your real conversion rate vs area average"},
+    {"icon": "🏆", "title": "How you rank against competitors in your postcode"},
+    {"icon": "⭐", "title": "Review response rate and sentiment analysis"},
+    {"icon": "⚡", "title": "Your single highest-impact change this week"}
+  ]
+}`;
+
+  const msg = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6', max_tokens: 1200,
+    messages: [{ role: 'user', content: prompt }]
+  });
+  const text = msg.content[0]?.text?.replace(/```json|```/g,'').trim();
+  return JSON.parse(text);
+}
+
+function generateDemoSnapshot(input) {
+  return {
+    scrapedSuccessfully: false,
+    whatWeFound: `We identified ${input.restaurantName} as a ${input.cuisine||'restaurant'} in ${input.postcode||'your area'}.`,
+    score: 62, scoreLabel: 'Room to improve',
+    scoreSub: 'Based on what we could see, there are clear opportunities to increase your order volume.',
+    freeInsights: [
+      { type:'warning', icon:'📸', title:'Photo coverage is the #1 ranking factor on Uber Eats', body:`${input.cuisine||'Restaurants'} in ${input.postcode||'your area'} with full photo coverage get 40-60% more clicks. Items without photos are effectively invisible on mobile.`, impact:'Potential +15-25 orders/week' },
+      { type:'critical', icon:'📂', title:'Menu structure directly affects your search placement', body:'How you name and group your categories affects how the algorithm surfaces you. Generic names like "Mains" or "Extras" consistently underperform specific category names.', impact:'' },
+      { type:'positive', icon:'⭐', title:'Review response rate affects your platform ranking', body:`Responding to reviews within 24 hours signals to ${input.platforms||'the platform'} that you\'re an engaged partner — this directly influences your search position.`, impact:'Protects existing ranking' }
+    ],
+    lockedItems: [
+      {icon:'📊',title:'Your actual weekly order volume and revenue'},
+      {icon:'📈',title:'Your real conversion rate vs area average'},
+      {icon:'🏆',title:'How you rank against competitors in your postcode'},
+      {icon:'⭐',title:'Review response rate and sentiment analysis'},
+      {icon:'⚡',title:'Your single highest-impact change this week'}
+    ]
+  };
+}
+
+// POST /api/analyse — free public snapshot (no auth required)
+app.post('/api/analyse', async (req, res) => {
+  const { restaurantName, postcode, city, cuisine, platforms, url, exclusive, email } = req.body;
+  if (!restaurantName) return res.status(400).json({ ok: false, error: 'Restaurant name is required.' });
+  try {
+    console.log(`[snapshot] ${restaurantName}, ${postcode||city}`);
+    const pageContent = url ? await fetchPageContent(url) : null;
+    const report = await runFreeSnapshot({ restaurantName, postcode: postcode||city, cuisine, platforms, url, exclusive }, pageContent);
+    res.json({ ok: true, report, restaurantName, postcode: postcode||city, cuisine, platforms, url, email });
+  } catch(e) {
+    console.error('[snapshot] error:', e.message);
+    res.status(500).json({ ok: false, error: 'Analysis failed. Please try again.' });
+  }
+});
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 app.post('/api/register', async (req, res) => {
   const { email, password } = req.body;
@@ -597,7 +700,7 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
 });
 
 // ── Page routes ───────────────────────────────────────────────────────────────
-const pages = ['dashboard', 'login', 'onboarding', 'account', 'admin'];
+const pages = ['dashboard', 'login', 'onboarding', 'account', 'admin', 'report'];
 pages.forEach(p => app.get(`/${p}`, (req, res) => res.sendFile(path.join(__dirname, 'public', `${p}.html`))));
 
 app.listen(PORT, () => console.log(`PlateIQ v2 running on port ${PORT}`));
