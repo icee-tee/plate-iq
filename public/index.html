@@ -146,8 +146,9 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
     <input type="email" id="email" placeholder="owner@yourrestaurant.com">
   </div>
   <div style="margin-top:20px;">
-    <button class="btn-primary" id="submitBtn" onclick="submitInterest()" style="position:relative;">
+    <button class="btn-primary" id="submitBtn" onclick="submitInterest()">
       <span id="submitLabel">Get my free snapshot →</span>
+      <span class="spinner" id="spinner"></span>
     </button>
     <p class="form-note">Free, instant, no account needed. We'll analyse what we can see on your listing.</p>
     <div class="form-error" id="formError"></div>
@@ -467,7 +468,7 @@ async function submitInterest() {
   var btn = document.getElementById('submitBtn');
   btn.disabled = true;
   document.getElementById('submitLabel').textContent = 'Analysing...';
-  document.getElementById('spinner').style.display = 'block';
+  var sp=document.getElementById('spinner'); if(sp) sp.style.display='block';
   document.getElementById('loadingOverlay').style.display = 'flex';
   animateLoading();
 
@@ -489,7 +490,7 @@ async function submitInterest() {
     document.getElementById('loadingOverlay').style.display = 'none';
     btn.disabled = false;
     document.getElementById('submitLabel').textContent = 'Get my free snapshot →';
-    document.getElementById('spinner').style.display = 'none';
+    var sp2=document.getElementById('spinner'); if(sp2) sp2.style.display='none';
     showError(err.message || 'Something went wrong. Please try again.');
   }
 }
