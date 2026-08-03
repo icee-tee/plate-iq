@@ -682,21 +682,28 @@ app.delete('/api/admin/client/:email', requireAdmin, async (req, res) => {
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// GET /admin/stats — revenue overview
+// GET /health — quick check the server is alive
+app.get('/health', (req, res) => res.json({ ok: true, db: !!pgPool, time: new Date().toISOString() }));
+
+// GET /api/admin/stats — revenue overview
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
-  if (!pgPool) return res.json({ ok: true, stats: {} });
-  const r = await pgPool.query(`
-    SELECT
-      COUNT(*) FILTER (WHERE plan_status='active') as active_clients,
-      COUNT(*) FILTER (WHERE plan='starter' AND plan_status='active') as starter_count,
-      COUNT(*) FILTER (WHERE plan='growth'  AND plan_status='active') as growth_count,
-      COUNT(*) FILTER (WHERE plan='partner' AND plan_status='active') as partner_count,
-      COUNT(*) as total_users
-    FROM users
-  `);
-  const s = r.rows[0];
-  const mrr = (s.starter_count * 199) + (s.growth_count * 499) + (s.partner_count * 999);
-  res.json({ ok: true, stats: { ...s, mrr } });
+  if (!pgPool) return res.json({ ok: true, stats: { active_clients:0, mrr:0, starter_count:0, growth_count:0, partner_count:0, total_users:0 }, warning: 'No database connected' });
+  try {
+    const r = await pgPool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE plan_status='active') as active_clients,
+        COUNT(*) FILTER (WHERE plan='starter' AND plan_status='active') as starter_count,
+        COUNT(*) FILTER (WHERE plan='growth'  AND plan_status='active') as growth_count,
+        COUNT(*) FILTER (WHERE plan='partner' AND plan_status='active') as partner_count,
+        COUNT(*) as total_users
+      FROM users
+    `);
+    const s = r.rows[0];
+    const mrr = (s.starter_count * 199) + (s.growth_count * 499) + (s.partner_count * 999);
+    res.json({ ok: true, stats: { ...s, mrr } });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // ── Page routes ───────────────────────────────────────────────────────────────
