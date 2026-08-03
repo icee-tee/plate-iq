@@ -132,176 +132,210 @@ tr:hover td{background:var(--bg);}
   </div>
 </div>
 
+
 <script>
 var adminPw = '';
 
 function unlockAdmin() {
   var pw = document.getElementById('adminPw').value;
   var errEl = document.getElementById('pwErr');
-  errEl.style.display='none';
-  errEl.textContent='Incorrect password.';
+  errEl.style.display = 'none';
 
-  // First check the server is alive
   fetch('/health')
     .then(function(r){ return r.json(); })
-    .then(function(h){
-      var dbNote = h.db ? '' : ' (No DB — running in demo mode)';
-      // Now try admin auth
-      return fetch('/api/admin/stats', {headers:{'x-admin-password':pw}})
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-          if (!d.ok) {
-            errEl.textContent = d.error || 'Incorrect password.';
-            errEl.style.display='block';
-            return;
-          }
-          adminPw = pw;
-          document.getElementById('pwGate').style.display='none';
-          document.getElementById('adminPanel').style.display='block';
-          document.getElementById('navNote').textContent='Admin' + dbNote;
-          if (d.warning) document.getElementById('navNote').textContent += ' ⚠ ' + d.warning;
-          renderStats(d.stats);
-          loadClients();
-        });
+    .then(function() {
+      return fetch('/api/admin/stats', { headers: { 'x-admin-password': pw } });
     })
-    .catch(function(e){
-      errEl.textContent = 'Cannot reach server: ' + e.message;
-      errEl.style.display='block';
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (!d.ok) {
+        errEl.textContent = d.error || 'Incorrect password.';
+        errEl.style.display = 'block';
+        return;
+      }
+      adminPw = pw;
+      document.getElementById('pwGate').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('navNote').textContent = 'Admin' + (d.warning ? ' ⚠ ' + d.warning : '');
+      renderStats(d.stats);
+      loadClients();
+    })
+    .catch(function(e) {
+      errEl.textContent = 'Error: ' + e.message;
+      errEl.style.display = 'block';
     });
 }
 
 function renderStats(s) {
   document.getElementById('statsGrid').innerHTML =
-    '<div class="stat-card"><div class="stat-label">Active clients</div><div class="stat-value green">'+s.active_clients+'</div></div>' +
-    '<div class="stat-card"><div class="stat-label">MRR</div><div class="stat-value amber">&pound;'+Number(s.mrr).toLocaleString()+'</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Starter</div><div class="stat-value">'+s.starter_count+'</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Growth</div><div class="stat-value">'+s.growth_count+'</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Partner</div><div class="stat-value">'+s.partner_count+'</div></div>';
+    stat('Active clients', s.active_clients, 'green') +
+    stat('MRR', '£' + Number(s.mrr).toLocaleString(), 'amber') +
+    stat('Starter', s.starter_count, '') +
+    stat('Growth', s.growth_count, '') +
+    stat('Partner', s.partner_count, '');
+}
+
+function stat(label, val, cls) {
+  return '<div class="stat-card"><div class="stat-label">' + label + '</div><div class="stat-value' + (cls ? ' ' + cls : '') + '">' + val + '</div></div>';
 }
 
 function loadClients() {
-  fetch('/api/admin/clients', {headers:{'x-admin-password':adminPw}})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      document.getElementById('clientCount').textContent = d.clients.length + ' clients';
+  fetch('/api/admin/clients', { headers: { 'x-admin-password': adminPw } })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      document.getElementById('clientCount').textContent = (d.clients||[]).length + ' clients';
       var tbody = document.getElementById('clientsBody');
-      tbody.innerHTML = d.clients.map(function(c){
-        var joined = new Date(c.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-        var planClass = c.plan_status==='active' ? 'active' : c.plan==='none'||!c.plan ? 'none' : '';
+      if (!d.clients || !d.clients.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">No clients yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = d.clients.map(function(c) {
+        var joined = new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        var planClass = c.plan_status === 'active' ? 'active' : (!c.plan || c.plan === 'none') ? 'none' : '';
         return '<tr>' +
-          '<td><strong>'+(c.name||'(no restaurant)')+'</strong><br><span style="font-size:11px;color:var(--muted);">'+(c.postcode||'')+'</span></td>' +
-          '<td>'+c.email+'</td>' +
-          '<td><span class="plan-pill">'+( c.plan||'none')+'</span></td>' +
-          '<td><span class="plan-pill '+planClass+'">'+(c.plan_status||'inactive')+'</span></td>' +
-          '<td>'+joined+'</td>' +
-          '<td>'+(c.weeks_logged||0)+' weeks</td>' +
-          '<td>' +
-            (c.restaurant_id ? '<button class="btn-xs primary" onclick="openDataModal(''+c.restaurant_id+'',''+c.name+'')">+ Data</button>' : '') +
-            '<button class="btn-xs" onclick="viewClient(''+c.email+'')">View</button>' +
-            '<button class="btn-xs danger" onclick="deleteClient(''+c.email+'')">Delete</button>' +
-          '</td></tr>';
-      }).join('') || '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">No clients yet</td></tr>';
+          '<td><strong>' + esc(c.name||'(no restaurant)') + '</strong><br><span style="font-size:11px;color:var(--muted)">' + esc(c.postcode||'') + '</span></td>' +
+          '<td>' + esc(c.email) + '</td>' +
+          '<td><span class="plan-pill">' + esc(c.plan||'none') + '</span></td>' +
+          '<td><span class="plan-pill ' + planClass + '">' + esc(c.plan_status||'inactive') + '</span></td>' +
+          '<td>' + joined + '</td>' +
+          '<td>' + (c.weeks_logged||0) + ' weeks</td>' +
+          '<td id="actions-' + c.email.replace('@','_').replace('.','_') + '">' + buildActions(c) + '</td>' +
+        '</tr>';
+      }).join('');
     });
 }
 
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildActions(c) {
+  var html = '';
+  if (c.restaurant_id) {
+    html += '<button class="btn-xs primary" data-rid="' + c.restaurant_id + '" data-rname="' + (c.name||'').replace(/"/g,'') + '" onclick="openDataModal(this.dataset.rid,this.dataset.rname)">+ Data</button> ';
+  }
+  html += '<button class="btn-xs" data-email="' + c.email + '" onclick="viewClient(this.dataset.email)">View</button> ';
+  html += '<button class="btn-xs danger" data-email="' + c.email + '" onclick="deleteClient(this.dataset.email)">Delete</button>';
+  return html;
+}
+
+function openDataModalBtn(btn) { openDataModal(btn.dataset.rid, btn.dataset.rname); }
+function viewClientBtn(btn) { viewClient(btn.dataset.email); }
+function deleteClientBtn(btn) { deleteClient(btn.dataset.email); }
 function openDataModal(restId, restName) {
   document.getElementById('dm-restId').value = restId;
   document.getElementById('dataModalRestaurant').textContent = restName;
-  // Default week ending to last Sunday
   var d = new Date();
   d.setDate(d.getDate() - d.getDay());
   document.getElementById('dm-week').value = d.toISOString().split('T')[0];
-  ['dm-orders','dm-revenue','dm-aov','dm-rating','dm-reviews','dm-notes'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('saveDataMsg').style.display='none';
-  document.getElementById('genReportMsg').style.display='none';
+  ['dm-orders','dm-revenue','dm-aov','dm-rating','dm-reviews','dm-notes'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('saveDataMsg').style.display = 'none';
+  document.getElementById('genReportMsg').style.display = 'none';
   document.getElementById('dataModal').classList.add('open');
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
 
 async function saveData() {
   var btn = document.getElementById('saveDataBtn');
   var msg = document.getElementById('saveDataMsg');
-  btn.disabled=true; btn.textContent='Saving...'; msg.style.display='none';
-  var res = await fetch('/api/admin/weekly-data', {
-    method:'POST', headers:{'Content-Type':'application/json','x-admin-password':adminPw},
-    body: JSON.stringify({
-      restaurantId: document.getElementById('dm-restId').value,
-      weekEnding:   document.getElementById('dm-week').value,
-      orders:       document.getElementById('dm-orders').value,
-      revenue:      document.getElementById('dm-revenue').value,
-      aov:          document.getElementById('dm-aov').value,
-      rating:       document.getElementById('dm-rating').value,
-      newReviews:   document.getElementById('dm-reviews').value,
-      notes:        document.getElementById('dm-notes').value
-    })
-  });
-  var d = await res.json();
-  msg.className = 'msg '+(d.ok?'ok':'err');
-  msg.textContent = d.ok ? 'Data saved successfully.' : (d.error||'Error saving data.');
-  msg.style.display='block';
-  btn.disabled=false; btn.textContent='Save data';
-  if (d.ok) loadClients();
+  btn.disabled = true; btn.textContent = 'Saving...'; msg.style.display = 'none';
+  try {
+    var res = await fetch('/api/admin/weekly-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
+      body: JSON.stringify({
+        restaurantId: document.getElementById('dm-restId').value,
+        weekEnding:   document.getElementById('dm-week').value,
+        orders:       document.getElementById('dm-orders').value,
+        revenue:      document.getElementById('dm-revenue').value,
+        aov:          document.getElementById('dm-aov').value,
+        rating:       document.getElementById('dm-rating').value,
+        newReviews:   document.getElementById('dm-reviews').value,
+        notes:        document.getElementById('dm-notes').value
+      })
+    });
+    var d = await res.json();
+    msg.className = 'msg ' + (d.ok ? 'ok' : 'err');
+    msg.textContent = d.ok ? 'Data saved successfully.' : (d.error||'Error saving.');
+    msg.style.display = 'block';
+    if (d.ok) loadClients();
+  } catch(e) {
+    msg.className = 'msg err'; msg.textContent = e.message; msg.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Save data';
 }
 
 async function generateReport() {
   var btn = document.getElementById('genReportBtn');
   var msg = document.getElementById('genReportMsg');
-  btn.disabled=true; btn.textContent='Generating...'; msg.style.display='none';
-  var res = await fetch('/api/admin/generate-report', {
-    method:'POST', headers:{'Content-Type':'application/json','x-admin-password':adminPw},
-    body: JSON.stringify({
-      restaurantId: document.getElementById('dm-restId').value,
-      weekEnding:   document.getElementById('dm-week').value
-    })
-  });
-  var d = await res.json();
-  msg.className = 'msg '+(d.ok?'ok':'err');
-  msg.textContent = d.ok ? 'Report generated and emailed to client.' : (d.error||'Error generating report.');
-  msg.style.display='block';
-  btn.disabled=false; btn.textContent='Generate AI report';
+  btn.disabled = true; btn.textContent = 'Generating...'; msg.style.display = 'none';
+  try {
+    var res = await fetch('/api/admin/generate-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
+      body: JSON.stringify({
+        restaurantId: document.getElementById('dm-restId').value,
+        weekEnding:   document.getElementById('dm-week').value
+      })
+    });
+    var d = await res.json();
+    msg.className = 'msg ' + (d.ok ? 'ok' : 'err');
+    msg.textContent = d.ok ? 'Report generated and client emailed.' : (d.error||'Error generating report.');
+    msg.style.display = 'block';
+  } catch(e) {
+    msg.className = 'msg err'; msg.textContent = e.message; msg.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Generate AI report';
 }
 
 async function viewClient(email) {
-  var res = await fetch('/api/admin/client/'+encodeURIComponent(email), {headers:{'x-admin-password':adminPw}});
+  var res = await fetch('/api/admin/client/' + encodeURIComponent(email), { headers: { 'x-admin-password': adminPw } });
   var d = await res.json();
-  var c = d;
-  var credsHtml = (c.credentials||[]).map(function(cr){
-    return '<div class="cred-block"><div class="cred-platform">'+cr.platform+'</div>' +
-      '<div class="cred-line"><strong>Email:</strong> '+(cr.login_email||'-')+'</div>' +
-      '<div class="cred-line"><strong>Password:</strong> '+(cr.login_password||'-')+'</div>' +
-      (cr.notes?'<div class="cred-line"><strong>Notes:</strong> '+cr.notes+'</div>':'') +
+  var credsHtml = (d.credentials||[]).map(function(cr) {
+    return '<div class="cred-block"><div class="cred-platform">' + esc(cr.platform) + '</div>' +
+      '<div class="cred-line"><strong>Email:</strong> ' + esc(cr.login_email||'-') + '</div>' +
+      '<div class="cred-line"><strong>Password:</strong> ' + esc(cr.login_password||'-') + '</div>' +
+      (cr.notes ? '<div class="cred-line"><strong>Notes:</strong> ' + esc(cr.notes) + '</div>' : '') +
     '</div>';
-  }).join('') || '<p style="font-size:13px;color:var(--muted);">No credentials stored.</p>';
+  }).join('') || '<p style="font-size:13px;color:var(--muted)">No credentials stored yet.</p>';
 
-  var histHtml = (c.history||[]).slice(0,5).map(function(h){
+  var histHtml = (d.history||[]).slice(0,5).map(function(h) {
     return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;">' +
-      '<span>w/e '+new Date(h.week_ending).toLocaleDateString('en-GB')+'</span>' +
-      '<span>'+h.orders+' orders &middot; &pound;'+Number(h.revenue).toFixed(2)+'</span>' +
-      '<span style="color:'+(h.report_data?'var(--green)':'var(--muted)')+';">'+(h.report_data?'Report ready':'No report')+'</span>' +
+      '<span>w/e ' + new Date(h.week_ending).toLocaleDateString('en-GB') + '</span>' +
+      '<span>' + (h.orders||0) + ' orders &middot; &pound;' + Number(h.revenue||0).toFixed(2) + '</span>' +
+      '<span style="color:' + (h.report_data ? 'var(--green)' : 'var(--muted)') + '">' + (h.report_data ? 'Report ready' : 'No report') + '</span>' +
     '</div>';
-  }).join('') || '<p style="font-size:13px;color:var(--muted);">No data yet.</p>';
+  }).join('') || '<p style="font-size:13px;color:var(--muted)">No data yet.</p>';
 
   document.getElementById('clientModalContent').innerHTML =
-    '<h3>'+(c.restaurant?c.restaurant.name:email)+'</h3>' +
-    '<div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">'+email+' &middot; Plan: '+(c.user&&c.user.plan||'none')+'</div>' +
-    '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;">Platform credentials</div>' +
+    '<h3>' + esc(d.restaurant ? d.restaurant.name : email) + '</h3>' +
+    '<div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">' + esc(email) + ' &middot; Plan: ' + esc(d.user&&d.user.plan||'none') + '</div>' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;">Platform credentials</div>' +
     credsHtml +
-    '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 8px;">Recent history</div>' +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 8px;">Recent history</div>' +
     histHtml;
   document.getElementById('clientModal').classList.add('open');
 }
 
 async function deleteClient(email) {
-  if (!confirm('Permanently delete '+email+'? This cannot be undone.')) return;
-  var res = await fetch('/api/admin/client/'+encodeURIComponent(email), {method:'DELETE',headers:{'x-admin-password':adminPw}});
+  if (!confirm('Permanently delete ' + email + '? This cannot be undone.')) return;
+  var res = await fetch('/api/admin/client/' + encodeURIComponent(email), { method: 'DELETE', headers: { 'x-admin-password': adminPw } });
   var d = await res.json();
   if (d.ok) { loadClients(); alert('Account deleted.'); }
-  else alert(d.error||'Error deleting account.');
+  else alert(d.error || 'Error deleting account.');
 }
 
-document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.getElementById('pwGate').style.display!=='none')unlockAdmin();});
-document.querySelectorAll('.modal-overlay').forEach(function(m){m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('open');});});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('pwGate').style.display !== 'none') unlockAdmin();
+});
+document.querySelectorAll('.modal-overlay').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('open'); });
+});
 </script>
 </body>
 </html>
