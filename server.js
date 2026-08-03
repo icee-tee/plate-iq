@@ -700,7 +700,7 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
 });
 
 // ── Page routes ───────────────────────────────────────────────────────────────
-const pages = ['dashboard', 'login', 'onboarding', 'account', 'admin', 'report'];
+const pages = ['dashboard', 'login', 'onboarding', 'account', 'admin', 'report', 'results'];
 pages.forEach(p => app.get(`/${p}`, (req, res) => res.sendFile(path.join(__dirname, 'public', `${p}.html`))));
 
 app.listen(PORT, () => console.log(`PlateIQ v2 running on port ${PORT}`));
