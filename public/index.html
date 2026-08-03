@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#1a1a1a;--ink-s:#3d3d3d;--muted:#6b6b6b;--muted-l:#a0a0a0;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-d:#c47f0a;--amber-p:#fef3dc;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--r-lg:18px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
+:root{--ink:#1a1a1a;--ink-s:#3d3d3d;--muted:#6b6b6b;--muted-l:#a0a0a0;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-d:#c47f0a;--amber-p:#fef3dc;--red:#dc2626;--green:#16a34a;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--r-lg:18px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6;}
 nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:64px;background:rgba(250,248,244,.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
@@ -259,92 +259,122 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
 </section>
 
 <hr style="border:none;border-top:1px solid var(--border);">
-<section style="padding:72px 48px;background:var(--ink);">
-  <div style="max-width:960px;margin:0 auto;">
-    <div style="text-align:center;margin-bottom:48px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">Your dashboard</div>
-      <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,40px);color:#fff;margin-bottom:8px;">Everything in one place, updated weekly.</h2>
-      <p style="font-size:15px;color:rgba(255,255,255,.5);max-width:500px;margin:0 auto;">Log in any time to see your numbers, your report, and exactly what to do next.</p>
+
+<!-- What's inside section -->
+<section style="padding:72px 48px;max-width:960px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:16px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">What's inside</div>
+    <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,42px);color:var(--ink);line-height:1.1;margin-bottom:12px;">Everything your competitors<br><em style="font-style:italic;color:var(--amber);">don't want you to know.</em></h2>
+    <p style="font-size:15px;color:var(--muted);max-width:520px;margin:0 auto 24px;line-height:1.65;">The restaurants winning on Uber Eats and Just Eat are not just better &mdash; they're optimised. Here's what your full report shows you.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:48px;">
+      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#128248; Photo gap analysis</span>
+      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#127942; Competitor breakdown</span>
+      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#128200; Order growth projection</span>
+      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#128176; Pricing strategy</span>
+      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#9889; Weekly action checklist</span>
+      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#128260; Cross-platform audit</span>
     </div>
-    <!-- Dashboard mockup -->
-    <div style="background:#faf8f4;border-radius:18px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.4);">
-      <!-- Mockup nav -->
-      <div style="background:#fff;border-bottom:1px solid rgba(26,26,26,.1);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-family:var(--serif);font-size:17px;color:#1a1a1a;">Plate<span style="color:var(--amber);">IQ</span></div>
-        <div style="display:flex;gap:4px;">
-          <div style="font-size:12px;font-weight:600;color:#1a1a1a;background:#faf8f4;padding:5px 12px;border-radius:8px;">Report</div>
-          <div style="font-size:12px;font-weight:600;color:#6b6b6b;padding:5px 12px;">Account</div>
+  </div>
+
+  <!-- Report preview cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:48px;">
+
+    <!-- Card 1: Score -->
+    <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:12px;">Menu health score</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        <div style="width:56px;height:56px;border-radius:50%;background:conic-gradient(var(--amber) 71%,#eee 71%);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div style="width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:14px;font-weight:700;color:var(--ink);">71</div>
         </div>
-        <div style="font-size:12px;color:#a0a0a0;">spicegarden@email.com</div>
+        <div>
+          <div style="font-family:var(--serif);font-size:15px;font-weight:400;color:var(--ink);">Good foundations</div>
+          <div style="font-size:12px;color:var(--muted);">Ranked #4 in your area &middot; 3 critical gaps found</div>
+        </div>
       </div>
-      <!-- Mockup content -->
-      <div style="padding:28px;">
-        <div style="margin-bottom:20px;">
-          <div style="font-family:var(--serif);font-size:22px;color:#1a1a1a;margin-bottom:2px;">Spice Garden</div>
-          <div style="font-size:12px;color:#6b6b6b;">M1 1AE &middot; Uber Eats + Just Eat</div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-top:4px;">Week ending 27 Jul 2026</div>
-        </div>
-        <!-- Metric cards -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
-          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:14px;">
-            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Orders</div>
-            <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;">312</div>
-            <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; 28 vs last week</div>
-          </div>
-          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:14px;">
-            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Revenue</div>
-            <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;">&pound;7,580</div>
-            <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; &pound;680 vs last week</div>
-          </div>
-          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:14px;">
-            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Avg order</div>
-            <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;">&pound;24.30</div>
-            <div style="font-size:11px;font-weight:600;color:#e8a020;margin-top:4px;">&rarr; No change</div>
-          </div>
-          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:14px;">
-            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Rating</div>
-            <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;">4.6</div>
-            <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; 0.1 vs last week</div>
-          </div>
-        </div>
-        <!-- Analysis + chart row -->
-        <div style="display:grid;grid-template-columns:1fr 280px;gap:14px;">
-          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:18px;">
-            <div style="font-family:var(--serif);font-size:15px;color:#1a1a1a;margin-bottom:4px;">Strong Friday performance, but midweek gap is widening</div>
-            <div style="font-size:12px;color:#6b6b6b;margin-bottom:14px;">Orders grew 9.8% week-on-week, driven by an exceptional Friday and Saturday. Your midweek volume (Mon&ndash;Wed) is 31% below area average for Indian cuisine in M1.</div>
-            <div style="background:#fef3dc;border-left:3px solid #e8a020;border-radius:6px;padding:12px;margin-bottom:8px;">
-              <div style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">&#128194; Menu restructure is suppressing add-ons</div>
-              <div style="font-size:11.5px;color:#3d3d3d;">14 items in a single "Extras" category. Splitting into Sides, Breads and Drinks typically increases basket size by &pound;2&ndash;4.</div>
-            </div>
-            <div style="background:#f0fdf4;border-left:3px solid #16a34a;border-radius:6px;padding:12px;">
-              <div style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">&#11088; Review response rate in top 15%</div>
-              <div style="font-size:11.5px;color:#3d3d3d;">91% of reviews answered this month. Uber Eats rewards this with improved search placement.</div>
-            </div>
-          </div>
-          <div>
-            <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:16px;margin-bottom:12px;">
-              <div style="font-family:var(--serif);font-size:14px;color:#1a1a1a;margin-bottom:12px;">Order trend</div>
-              <div style="display:flex;align-items:flex-end;gap:5px;height:60px;">
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:rgba(26,26,26,.1);border-radius:3px 3px 0 0;height:30%;"></div><div style="font-size:8px;color:#a0a0a0;">w1</div></div>
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:rgba(26,26,26,.1);border-radius:3px 3px 0 0;height:45%;"></div><div style="font-size:8px;color:#a0a0a0;">w2</div></div>
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:var(--amber);opacity:.5;border-radius:3px 3px 0 0;height:55%;"></div><div style="font-size:8px;color:#a0a0a0;">w3</div></div>
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:var(--amber);opacity:.6;border-radius:3px 3px 0 0;height:65%;"></div><div style="font-size:8px;color:#a0a0a0;">w4</div></div>
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:var(--amber);opacity:.75;border-radius:3px 3px 0 0;height:75%;"></div><div style="font-size:8px;color:#a0a0a0;">w5</div></div>
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:var(--amber);border-radius:3px 3px 0 0;height:100%;box-shadow:0 0 0 1.5px #c47f0a;"></div><div style="font-size:8px;color:#a0a0a0;font-weight:700;">now</div></div>
-              </div>
-            </div>
-            <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:16px;">
-              <div style="font-family:var(--serif);font-size:14px;color:#1a1a1a;margin-bottom:10px;">This week</div>
-              <div style="font-size:11.5px;color:#3d3d3d;display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;"><div style="width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;margin-top:1px;"></div>Add photos to Biryani section</div>
-              <div style="font-size:11.5px;color:#3d3d3d;display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;"><div style="width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;margin-top:1px;"></div>Respond to 3 unanswered reviews</div>
-              <div style="font-size:11.5px;color:#3d3d3d;display:flex;gap:8px;align-items:flex-start;"><div style="width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;margin-top:1px;"></div>Launch midweek meal deal</div>
-            </div>
-          </div>
-        </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:110px;flex-shrink:0;">Photo coverage</span><div style="flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:40%;height:100%;background:var(--red);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);width:32px;text-align:right;">40%</span></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:110px;flex-shrink:0;">Menu structure</span><div style="flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:75%;height:100%;background:var(--amber);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);width:32px;text-align:right;">75%</span></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:110px;flex-shrink:0;">Pricing match</span><div style="flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:85%;height:100%;background:var(--green);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);width:32px;text-align:right;">85%</span></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:110px;flex-shrink:0;">Visibility score</span><div style="flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:60%;height:100%;background:var(--amber);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);width:32px;text-align:right;">60%</span></div>
+      </div>
+    </div>
+
+    <!-- Card 2: Priorities -->
+    <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:12px;">Top 3 actions this week</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--r);font-size:13px;color:var(--ink-s);"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-top:5px;"></span>Add photos to your 9 most-ordered items</div>
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--r);font-size:13px;color:var(--ink-s);"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-top:5px;"></span>Rename &ldquo;Combo 1&rdquo; &mdash; customers don&rsquo;t click unnamed items</div>
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--r);font-size:13px;color:var(--ink-s);"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-top:5px;"></span>Your minimum order (&pound;25) is 40% above area average</div>
+      </div>
+    </div>
+
+    <!-- Card 3: Checklist (locked) -->
+    <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;position:relative;overflow:hidden;">
+      <div style="position:absolute;inset:0;background:rgba(250,248,244,.88);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;border-radius:var(--r-lg);z-index:2;">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);background:var(--card);padding:6px 16px;border-radius:99px;border:1px solid var(--border-m);">&#128274; Paid plan</span>
+      </div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:12px;">Weekly optimisation checklist</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;">&#10003;</div>Update hero image</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;">&#10003;</div>Add bundle offer for Friday</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-m);flex-shrink:0;"></div>Review competitor pricing</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-m);flex-shrink:0;"></div>Upload 4 new food photos</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-m);flex-shrink:0;"></div>Respond to 3 unanswered reviews</div>
+      </div>
+    </div>
+
+    <!-- Card 4: Competitor (locked) -->
+    <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;position:relative;overflow:hidden;">
+      <div style="position:absolute;inset:0;background:rgba(250,248,244,.88);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;border-radius:var(--r-lg);z-index:2;">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);background:var(--card);padding:6px 16px;border-radius:99px;border:1px solid var(--border-m);">&#128274; Paid plan</span>
+      </div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:12px;">Competitor gap analysis</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:80px;flex-shrink:0;">You</span><div style="flex:1;height:5px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:71%;height:100%;background:var(--amber);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);">71</span></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:80px;flex-shrink:0;">#1 in area</span><div style="flex:1;height:5px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:94%;height:100%;background:var(--green);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);">94</span></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:80px;flex-shrink:0;">Area average</span><div style="flex:1;height:5px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:63%;height:100%;background:var(--muted-l);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);">63</span></div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--ink-s);">You're above average but 23 points behind the leader. Here's exactly what they're doing differently...</div>
+    </div>
+  </div>
+
+  <!-- Before / After -->
+  <div style="background:var(--ink);border-radius:var(--r-lg);overflow:hidden;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;">
+      <div style="padding:14px 20px;font-family:var(--sans);font-size:13px;font-weight:700;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);">&#10060; Without PlateIQ</div>
+      <div style="padding:14px 20px;font-family:var(--sans);font-size:13px;font-weight:700;background:var(--amber);color:var(--ink);">&#10003; With PlateIQ</div>
+    </div>
+    <div>
+      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Photos</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
+        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">4 of 18 items have photos <span style="font-size:10px;font-weight:700;background:rgba(220,38,38,.2);color:#f87171;padding:2px 7px;border-radius:99px;">-78%</span></div>
+        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">18 of 18 &mdash; full coverage <span style="font-size:10px;font-weight:700;background:rgba(232,160,32,.2);color:var(--amber);padding:2px 7px;border-radius:99px;">Done</span></div>
+      </div>
+      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Menu</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
+        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">&ldquo;Combo 1&rdquo;, &ldquo;Combo 2&rdquo; &mdash; no descriptions</div>
+        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">Named items, descriptions, clear upsells</div>
+      </div>
+      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Orders</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
+        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">~47 orders/week <span style="font-size:10px;font-weight:700;background:rgba(220,38,38,.2);color:#f87171;padding:2px 7px;border-radius:99px;">Below avg</span></div>
+        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">~71 orders/week projected <span style="font-size:10px;font-weight:700;background:rgba(232,160,32,.2);color:var(--amber);padding:2px 7px;border-radius:99px;">+51%</span></div>
+      </div>
+      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Promotions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
+        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">No active offers running</div>
+        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">Strategic weekly offers scheduled &amp; live</div>
+      </div>
+      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Reviews</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
+        <div style="padding:12px 20px;font-size:13px;color:rgba(255,255,255,.45);">12 unanswered reviews in last 30 days</div>
+        <div style="padding:12px 20px;font-size:13px;color:#fff;font-weight:600;">100% response rate &mdash; managed weekly</div>
       </div>
     </div>
   </div>
 </section>
+
 <section class="pricing-section" id="pricing">
   <div class="pricing-inner">
     <h2>Pick your level of support</h2>
@@ -391,70 +421,25 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
   <p>Restaurant delivery intelligence &middot; &copy; 2026 &middot; <a href="/login" style="color:var(--muted-l);text-decoration:none;">Client login</a></p>
 </footer>
 
+
+
 <script>
 var exclusivity = 'no';
+
 function setExcl(btn, val) {
   exclusivity = val;
   document.querySelectorAll('.excl-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
 }
-function showError(msg){ var e=document.getElementById('formError'); e.textContent=msg; e.style.display='block'; }
-function clearError(){ document.getElementById('formError').style.display='none'; }
 
-function setLoading(on) {
-  var btn = document.getElementById('submitBtn');
-  var lbl = document.getElementById('submitLabel');
-  btn.disabled = on;
-  lbl.textContent = on ? 'Analysing...' : 'Get my free snapshot →';
-}
-
-async function submitInterest() {
-  clearError();
-  var name      = document.getElementById('restaurantName').value.trim();
-  var postcode  = document.getElementById('postcode').value.trim();
-  var email     = document.getElementById('email').value.trim();
-  var url       = (document.getElementById('url') || {}).value || '';
-  var cuisine   = document.getElementById('cuisine').value;
-  var platforms = Array.from(document.querySelectorAll('.platform-pill.active')).map(function(b){return b.dataset.p;}).join(', ');
-
-  if (!name)                           return showError('Please enter your restaurant name.');
-  if (!postcode)                       return showError('Please enter your postcode.');
-  if (!email || !email.includes('@'))  return showError('Please enter a valid email address.');
-  if (!platforms)                      return showError('Please select at least one platform.');
-
-  // Store for onboarding pre-fill
-  try { localStorage.setItem('piq_interest', JSON.stringify({restaurantName:name,postcode,cuisine,platforms,email,exclusive:exclusivity})); } catch(e) {}
-
-  setLoading(true);
-  try {
-    var res = await fetch('/api/analyse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ restaurantName:name, postcode, cuisine, platforms, url, exclusive:exclusivity, email })
-    });
-    var data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Analysis failed.');
-    sessionStorage.setItem('piq_snapshot', JSON.stringify(data));
-    sessionStorage.setItem('piq_email', email);
-    window.location.href = '/report';
-  } catch(err) {
-    setLoading(false);
-    showError(err.message || 'Something went wrong. Please try again.');
-  }
-}
-</script>
-<script>
-var exclusivity = 'no';
-function setExcl(btn, val) {
-  exclusivity = val;
-  document.querySelectorAll('.excl-btn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-}
 function showError(msg){ var e=document.getElementById('formError'); e.textContent=msg; e.style.display='block'; }
 function clearError(){ document.getElementById('formError').style.display='none'; }
 
 function animateLoading() {
-  var steps=['ls1','ls2','ls3','ls4'], delays=[0,4000,9000,15000], pcts=[10,35,65,90], pf=document.getElementById('pf');
+  var steps=['ls1','ls2','ls3','ls4'];
+  var delays=[0,4000,9000,15000];
+  var pcts=[10,35,65,90];
+  var pf=document.getElementById('pf');
   steps.forEach(function(id,i){
     setTimeout(function(){
       if(i>0){var p=document.getElementById(steps[i-1]);if(p){p.classList.remove('active');p.classList.add('done');}}
@@ -473,11 +458,11 @@ async function submitInterest() {
   var cuisine   = document.getElementById('cuisine').value;
   var platforms = Array.from(document.querySelectorAll('.platform-pill.active')).map(function(b){return b.dataset.p;}).join(', ');
 
-  if (!url)                            return showError('Please paste your listing URL.');
-  if (!name)                           return showError('Please enter your restaurant name.');
-  if (!postcode)                       return showError('Please enter your postcode.');
-  if (!email || !email.includes('@'))  return showError('Please enter a valid email address.');
-  if (!platforms)                      return showError('Please select at least one platform.');
+  if (!url)                           return showError('Please paste your listing URL.');
+  if (!name)                          return showError('Please enter your restaurant name.');
+  if (!postcode)                      return showError('Please enter your postcode.');
+  if (!email||!email.includes('@'))   return showError('Please enter a valid email address.');
+  if (!platforms)                     return showError('Please select at least one platform.');
 
   var btn = document.getElementById('submitBtn');
   btn.disabled = true;
@@ -490,15 +475,14 @@ async function submitInterest() {
     var res = await fetch('/api/analyse', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ restaurantName:name, postcode, url, cuisine, platforms, exclusive:exclusivity, email })
+      body: JSON.stringify({ restaurantName:name, postcode:postcode, url:url, cuisine:cuisine, platforms:platforms, exclusive:exclusivity, email:email })
     });
     var data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Analysis failed.');
 
-    // Store for results page
     sessionStorage.setItem('piq_snapshot', JSON.stringify(data));
     sessionStorage.setItem('piq_email', email);
-    try { localStorage.setItem('piq_interest', JSON.stringify({restaurantName:name,postcode,cuisine,platforms,email,exclusive:exclusivity})); } catch(e){}
+    try { localStorage.setItem('piq_interest', JSON.stringify({restaurantName:name, postcode:postcode, cuisine:cuisine, platforms:platforms, email:email, exclusive:exclusivity})); } catch(e){}
 
     window.location.href = '/results';
   } catch(err) {
