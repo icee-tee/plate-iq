@@ -40,6 +40,8 @@ h1 em{font-style:italic;color:var(--amber);}
 .btn-primary{width:100%;font-family:var(--serif);font-size:16px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
 .btn-primary:hover{background:#2a2a2a;}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+@keyframes spin{to{transform:rotate(360deg)}}
 .form-note{font-size:12px;color:var(--muted-l);text-align:center;margin-top:10px;}
 .form-error{font-size:13px;color:#dc2626;margin-top:8px;display:none;text-align:center;}
 .how{max-width:900px;margin:0 auto;padding:72px 48px;}
@@ -70,6 +72,19 @@ h1 em{font-style:italic;color:var(--amber);}
 .p-btn:hover{background:rgba(255,255,255,.1);}
 .p-card.featured .p-btn{background:var(--ink);border-color:var(--ink);}
 .p-card.featured .p-btn:hover{background:#333;}
+
+.loading-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(250,248,244,.92);backdrop-filter:blur(10px);}
+.loading-card{background:#fff;border:1px solid var(--border-m);border-radius:20px;padding:40px 44px;max-width:420px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.12);}
+.loading-title{font-family:var(--serif);font-size:24px;color:var(--ink);margin-bottom:4px;}
+.loading-sub{font-size:13.5px;color:var(--muted);margin-bottom:28px;}
+.l-step{display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--muted);margin-bottom:14px;font-weight:500;transition:color .3s;}
+.l-step.active{color:var(--ink);}
+.l-step.done{color:#16a34a;}
+.l-icon{width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0;transition:all .3s;}
+.l-step.active .l-icon{background:var(--amber);color:var(--ink);}
+.l-step.done .l-icon{background:#16a34a;color:#fff;}
+.progress-bar{margin-top:24px;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--amber);border-radius:99px;width:0%;transition:width .6s ease;}
 footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-size:12px;color:var(--muted-l);}
 @media(max-width:700px){.how-grid,.pricing-grid{grid-template-columns:1fr;}.f-row{grid-template-columns:1fr;}nav{padding:0 20px;}.hero{padding:52px 20px 40px;}.pricing-section,.how{padding:48px 20px;}}
 </style>
@@ -85,9 +100,9 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
 
 <section class="hero">
   <div class="hero-inner">
-    <div class="eyebrow">Restaurant delivery growth</div>
-    <h1>More orders.<br><em>Every week.</em></h1>
-    <p class="hero-sub">We manage and optimise your Uber Eats and Just Eat listings weekly — so you spend less time on the platform and more time in the kitchen.</p>
+    <div class="eyebrow">Free listing snapshot</div>
+    <h1>Your delivery listing<br>is losing you <em>orders.</em></h1>
+    <p class="hero-sub">Paste your URL and we'll tell you what we can see about your listing — free, in 30 seconds. No account needed.</p>
   </div>
 </section>
 
@@ -107,8 +122,10 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
       <button type="button" class="excl-btn" onclick="setExcl(this,'yes')">Exclusive to one</button>
     </div>
   </div>
+  <div class="step-label">Your listing URL</div>
+  <div class="f-group"><label>Uber Eats / Just Eat / Deliveroo URL</label><input type="url" id="url" placeholder="Paste your restaurant listing URL"></div>
   <div class="f-divider"></div>
-  <div class="step-label">Tell us about your restaurant</div>
+  <div class="step-label">A few quick details</div>
   <div class="f-row">
     <div class="f-group"><label>Restaurant name <span style="color:#dc2626;">*</span></label><input type="text" id="restaurantName" placeholder="e.g. Spice Garden"></div>
     <div class="f-group"><label>Postcode <span style="color:#dc2626;">*</span></label><input type="text" id="postcode" placeholder="e.g. M1 1AE"></div>
@@ -129,15 +146,108 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
     <input type="email" id="email" placeholder="owner@yourrestaurant.com">
   </div>
   <div style="margin-top:20px;">
-    <button class="btn-primary" id="submitBtn" onclick="submitInterest()">
-      <span id="submitLabel">Get started →</span>
+    <button class="btn-primary" id="submitBtn" onclick="submitInterest()" style="position:relative;">
+      <span id="submitLabel">Get my free snapshot →</span>
     </button>
-    <p class="form-note">We’ll be in touch within 24 hours. No commitment required.</p>
+    <p class="form-note">Free, instant, no account needed. We'll analyse what we can see on your listing.</p>
     <div class="form-error" id="formError"></div>
   </div>
 </div>
 </section>
 
+
+<hr style="border:none;border-top:1px solid var(--border);">
+<section style="padding:72px 48px;max-width:960px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:48px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">What you get</div>
+    <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,40px);color:var(--ink);margin-bottom:12px;">Your weekly performance dashboard</h2>
+    <p style="font-size:15px;color:var(--muted);max-width:480px;margin:0 auto;">Every week your dashboard updates with real data, AI-written analysis, and specific actions to take.</p>
+  </div>
+
+  <!-- Dashboard mockup -->
+  <div style="background:var(--ink);border-radius:20px;padding:3px;box-shadow:0 24px 60px rgba(0,0,0,.18);">
+    <!-- Fake browser bar -->
+    <div style="background:#2a2a2a;border-radius:18px 18px 0 0;padding:10px 16px;display:flex;align-items:center;gap:6px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
+      <div style="flex:1;background:#3a3a3a;border-radius:4px;height:20px;margin:0 16px;display:flex;align-items:center;padding:0 8px;">
+        <span style="font-size:10px;color:rgba(255,255,255,.3);">plateiq.co.uk/dashboard</span>
+      </div>
+    </div>
+    <!-- Dashboard content -->
+    <div style="background:#faf8f4;border-radius:0 0 18px 18px;padding:24px;overflow:hidden;">
+      <!-- Metric cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Orders</div>
+          <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;line-height:1;">312</div>
+          <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; 8% vs last week</div>
+        </div>
+        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Revenue</div>
+          <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;line-height:1;">&pound;7,580</div>
+          <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; &pound;480 vs last week</div>
+        </div>
+        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Avg order value</div>
+          <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;line-height:1;">&pound;24.30</div>
+          <div style="font-size:11px;font-weight:600;color:#e8a020;margin-top:4px;">&rarr; No change</div>
+        </div>
+        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Rating</div>
+          <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;line-height:1;">4.6</div>
+          <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; 0.1 vs last week</div>
+        </div>
+      </div>
+      <!-- Two col -->
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:14px;">
+        <!-- Analysis card -->
+        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:16px;">
+          <div style="font-family:var(--serif);font-size:15px;color:#1a1a1a;margin-bottom:4px;">Strong Friday, but midweek gap is widening</div>
+          <div style="font-size:12px;color:#6b6b6b;margin-bottom:14px;">Your Friday peak of 98 orders is up 12% week-on-week, which is excellent. However, Monday through Wednesday has dropped to an average of 33 orders per day, which is 28% below the area average for Indian cuisine...</div>
+          <!-- Mini insight cards -->
+          <div style="background:#fef2f2;border-left:3px solid #dc2626;border-radius:6px;padding:10px 12px;margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:700;color:#1a1a1a;">Your Biryani section has zero photos</div>
+            <div style="font-size:11px;color:#3d3d3d;margin-top:2px;">Items without photos get 63% fewer clicks on Uber Eats mobile.</div>
+          </div>
+          <div style="background:#f0fdf4;border-left:3px solid #16a34a;border-radius:6px;padding:10px 12px;">
+            <div style="font-size:12px;font-weight:700;color:#1a1a1a;">Review response rate in top 15%</div>
+            <div style="font-size:11px;color:#3d3d3d;margin-top:2px;">You've responded to 91% of reviews this month &mdash; excellent.</div>
+          </div>
+        </div>
+        <!-- Chart + actions -->
+        <div>
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:#6b6b6b;margin-bottom:12px;">Order trend</div>
+            <div style="display:flex;align-items:flex-end;gap:4px;height:60px;">
+              <div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:31%;opacity:.7;"></div><div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:36%;opacity:.7;"></div><div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:42%;opacity:.7;"></div><div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:51%;opacity:.7;"></div><div style="flex:1;background:#e8a020;border-radius:2px 2px 0 0;height:91%;opacity:1;"></div><div style="flex:1;background:#e8a020;border-radius:2px 2px 0 0;height:100%;opacity:1;"></div><div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:62%;opacity:.7;"></div>
+            </div>
+            <div style="display:flex;gap:4px;margin-top:4px;">
+              <div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">M</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">T</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">W</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">T</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">F</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">S</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">S</div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#6b6b6b;margin-bottom:10px;">This week's actions</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(26,26,26,.07);font-size:11px;color:#3d3d3d;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;"></div>Upload Biryani photos</div><div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(26,26,26,.07);font-size:11px;color:#3d3d3d;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;"></div>Reply to 3 unanswered reviews</div><div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(26,26,26,.07);font-size:11px;color:#3d3d3d;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;"></div>Create Midweek Meal Deal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-card">
+    <div class="loading-title">Analysing your listing...</div>
+    <div class="loading-sub">Checking what we can actually see</div>
+    <div class="l-step" id="ls1"><div class="l-icon">1</div>Reading your listing URL</div>
+    <div class="l-step" id="ls2"><div class="l-icon">2</div>Checking menu &amp; photo coverage</div>
+    <div class="l-step" id="ls3"><div class="l-icon">3</div>Benchmarking against your area</div>
+    <div class="l-step" id="ls4"><div class="l-icon">4</div>Writing your recommendations</div>
+    <div class="progress-bar"><div class="progress-fill" id="pf"></div></div>
+  </div>
+</div>
 <hr style="border:none;border-top:1px solid var(--border);">
 <section class="how">
   <h2>How PlateIQ works</h2>
@@ -147,7 +257,94 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
     <div><div class="how-num">03</div><div class="how-lbl">Watch the numbers move</div><div class="how-desc">Every week your dashboard updates with your latest performance data, AI-generated analysis, and your action list.</div></div>
   </div>
 </section>
+
 <hr style="border:none;border-top:1px solid var(--border);">
+<section style="padding:72px 48px;background:var(--ink);">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:48px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">Your dashboard</div>
+      <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,40px);color:#fff;margin-bottom:8px;">Everything in one place, updated weekly.</h2>
+      <p style="font-size:15px;color:rgba(255,255,255,.5);max-width:500px;margin:0 auto;">Log in any time to see your numbers, your report, and exactly what to do next.</p>
+    </div>
+    <!-- Dashboard mockup -->
+    <div style="background:#faf8f4;border-radius:18px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.4);">
+      <!-- Mockup nav -->
+      <div style="background:#fff;border-bottom:1px solid rgba(26,26,26,.1);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-family:var(--serif);font-size:17px;color:#1a1a1a;">Plate<span style="color:var(--amber);">IQ</span></div>
+        <div style="display:flex;gap:4px;">
+          <div style="font-size:12px;font-weight:600;color:#1a1a1a;background:#faf8f4;padding:5px 12px;border-radius:8px;">Report</div>
+          <div style="font-size:12px;font-weight:600;color:#6b6b6b;padding:5px 12px;">Account</div>
+        </div>
+        <div style="font-size:12px;color:#a0a0a0;">spicegarden@email.com</div>
+      </div>
+      <!-- Mockup content -->
+      <div style="padding:28px;">
+        <div style="margin-bottom:20px;">
+          <div style="font-family:var(--serif);font-size:22px;color:#1a1a1a;margin-bottom:2px;">Spice Garden</div>
+          <div style="font-size:12px;color:#6b6b6b;">M1 1AE &middot; Uber Eats + Just Eat</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-top:4px;">Week ending 27 Jul 2026</div>
+        </div>
+        <!-- Metric cards -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:14px;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Orders</div>
+            <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;">312</div>
+            <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; 28 vs last week</div>
+          </div>
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:14px;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Revenue</div>
+            <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;">&pound;7,580</div>
+            <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; &pound;680 vs last week</div>
+          </div>
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:14px;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Avg order</div>
+            <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;">&pound;24.30</div>
+            <div style="font-size:11px;font-weight:600;color:#e8a020;margin-top:4px;">&rarr; No change</div>
+          </div>
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:14px;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Rating</div>
+            <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;">4.6</div>
+            <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; 0.1 vs last week</div>
+          </div>
+        </div>
+        <!-- Analysis + chart row -->
+        <div style="display:grid;grid-template-columns:1fr 280px;gap:14px;">
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:18px;">
+            <div style="font-family:var(--serif);font-size:15px;color:#1a1a1a;margin-bottom:4px;">Strong Friday performance, but midweek gap is widening</div>
+            <div style="font-size:12px;color:#6b6b6b;margin-bottom:14px;">Orders grew 9.8% week-on-week, driven by an exceptional Friday and Saturday. Your midweek volume (Mon&ndash;Wed) is 31% below area average for Indian cuisine in M1.</div>
+            <div style="background:#fef3dc;border-left:3px solid #e8a020;border-radius:6px;padding:12px;margin-bottom:8px;">
+              <div style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">&#128194; Menu restructure is suppressing add-ons</div>
+              <div style="font-size:11.5px;color:#3d3d3d;">14 items in a single "Extras" category. Splitting into Sides, Breads and Drinks typically increases basket size by &pound;2&ndash;4.</div>
+            </div>
+            <div style="background:#f0fdf4;border-left:3px solid #16a34a;border-radius:6px;padding:12px;">
+              <div style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">&#11088; Review response rate in top 15%</div>
+              <div style="font-size:11.5px;color:#3d3d3d;">91% of reviews answered this month. Uber Eats rewards this with improved search placement.</div>
+            </div>
+          </div>
+          <div>
+            <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:16px;margin-bottom:12px;">
+              <div style="font-family:var(--serif);font-size:14px;color:#1a1a1a;margin-bottom:12px;">Order trend</div>
+              <div style="display:flex;align-items:flex-end;gap:5px;height:60px;">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:rgba(26,26,26,.1);border-radius:3px 3px 0 0;height:30%;"></div><div style="font-size:8px;color:#a0a0a0;">w1</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:rgba(26,26,26,.1);border-radius:3px 3px 0 0;height:45%;"></div><div style="font-size:8px;color:#a0a0a0;">w2</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:var(--amber);opacity:.5;border-radius:3px 3px 0 0;height:55%;"></div><div style="font-size:8px;color:#a0a0a0;">w3</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:var(--amber);opacity:.6;border-radius:3px 3px 0 0;height:65%;"></div><div style="font-size:8px;color:#a0a0a0;">w4</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:var(--amber);opacity:.75;border-radius:3px 3px 0 0;height:75%;"></div><div style="font-size:8px;color:#a0a0a0;">w5</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;"><div style="width:100%;background:var(--amber);border-radius:3px 3px 0 0;height:100%;box-shadow:0 0 0 1.5px #c47f0a;"></div><div style="font-size:8px;color:#a0a0a0;font-weight:700;">now</div></div>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:12px;padding:16px;">
+              <div style="font-family:var(--serif);font-size:14px;color:#1a1a1a;margin-bottom:10px;">This week</div>
+              <div style="font-size:11.5px;color:#3d3d3d;display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;"><div style="width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;margin-top:1px;"></div>Add photos to Biryani section</div>
+              <div style="font-size:11.5px;color:#3d3d3d;display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;"><div style="width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;margin-top:1px;"></div>Respond to 3 unanswered reviews</div>
+              <div style="font-size:11.5px;color:#3d3d3d;display:flex;gap:8px;align-items:flex-start;"><div style="width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;margin-top:1px;"></div>Launch midweek meal deal</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 <section class="pricing-section" id="pricing">
   <div class="pricing-inner">
     <h2>Pick your level of support</h2>
@@ -204,11 +401,19 @@ function setExcl(btn, val) {
 function showError(msg){ var e=document.getElementById('formError'); e.textContent=msg; e.style.display='block'; }
 function clearError(){ document.getElementById('formError').style.display='none'; }
 
-function submitInterest() {
+function setLoading(on) {
+  var btn = document.getElementById('submitBtn');
+  var lbl = document.getElementById('submitLabel');
+  btn.disabled = on;
+  lbl.textContent = on ? 'Analysing...' : 'Get my free snapshot →';
+}
+
+async function submitInterest() {
   clearError();
   var name      = document.getElementById('restaurantName').value.trim();
   var postcode  = document.getElementById('postcode').value.trim();
   var email     = document.getElementById('email').value.trim();
+  var url       = (document.getElementById('url') || {}).value || '';
   var cuisine   = document.getElementById('cuisine').value;
   var platforms = Array.from(document.querySelectorAll('.platform-pill.active')).map(function(b){return b.dataset.p;}).join(', ');
 
@@ -218,16 +423,91 @@ function submitInterest() {
   if (!platforms)                      return showError('Please select at least one platform.');
 
   // Store for onboarding pre-fill
-  try {
-    localStorage.setItem('piq_interest', JSON.stringify({
-      restaurantName: name, postcode: postcode,
-      cuisine: cuisine, platforms: platforms,
-      email: email, exclusive: exclusivity
-    }));
-  } catch(e) {}
+  try { localStorage.setItem('piq_interest', JSON.stringify({restaurantName:name,postcode,cuisine,platforms,email,exclusive:exclusivity})); } catch(e) {}
 
-  // Go to register
-  window.location.href = '/login?mode=register&email=' + encodeURIComponent(email);
+  setLoading(true);
+  try {
+    var res = await fetch('/api/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ restaurantName:name, postcode, cuisine, platforms, url, exclusive:exclusivity, email })
+    });
+    var data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Analysis failed.');
+    sessionStorage.setItem('piq_snapshot', JSON.stringify(data));
+    sessionStorage.setItem('piq_email', email);
+    window.location.href = '/report';
+  } catch(err) {
+    setLoading(false);
+    showError(err.message || 'Something went wrong. Please try again.');
+  }
+}
+</script>
+<script>
+var exclusivity = 'no';
+function setExcl(btn, val) {
+  exclusivity = val;
+  document.querySelectorAll('.excl-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+function showError(msg){ var e=document.getElementById('formError'); e.textContent=msg; e.style.display='block'; }
+function clearError(){ document.getElementById('formError').style.display='none'; }
+
+function animateLoading() {
+  var steps=['ls1','ls2','ls3','ls4'], delays=[0,4000,9000,15000], pcts=[10,35,65,90], pf=document.getElementById('pf');
+  steps.forEach(function(id,i){
+    setTimeout(function(){
+      if(i>0){var p=document.getElementById(steps[i-1]);if(p){p.classList.remove('active');p.classList.add('done');}}
+      var el=document.getElementById(id);if(el)el.classList.add('active');
+      if(pf)pf.style.width=pcts[i]+'%';
+    },delays[i]);
+  });
+}
+
+async function submitInterest() {
+  clearError();
+  var name      = document.getElementById('restaurantName').value.trim();
+  var postcode  = document.getElementById('postcode').value.trim();
+  var url       = document.getElementById('url').value.trim();
+  var email     = document.getElementById('email').value.trim();
+  var cuisine   = document.getElementById('cuisine').value;
+  var platforms = Array.from(document.querySelectorAll('.platform-pill.active')).map(function(b){return b.dataset.p;}).join(', ');
+
+  if (!url)                            return showError('Please paste your listing URL.');
+  if (!name)                           return showError('Please enter your restaurant name.');
+  if (!postcode)                       return showError('Please enter your postcode.');
+  if (!email || !email.includes('@'))  return showError('Please enter a valid email address.');
+  if (!platforms)                      return showError('Please select at least one platform.');
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  document.getElementById('submitLabel').textContent = 'Analysing...';
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  animateLoading();
+
+  try {
+    var res = await fetch('/api/analyse', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ restaurantName:name, postcode, url, cuisine, platforms, exclusive:exclusivity, email })
+    });
+    var data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Analysis failed.');
+
+    // Store for results page
+    sessionStorage.setItem('piq_snapshot', JSON.stringify(data));
+    sessionStorage.setItem('piq_email', email);
+    try { localStorage.setItem('piq_interest', JSON.stringify({restaurantName:name,postcode,cuisine,platforms,email,exclusive:exclusivity})); } catch(e){}
+
+    window.location.href = '/results';
+  } catch(err) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    btn.disabled = false;
+    document.getElementById('submitLabel').textContent = 'Get my free snapshot →';
+    document.getElementById('spinner').style.display = 'none';
+    showError(err.message || 'Something went wrong. Please try again.');
+  }
 }
 </script>
 </body>
