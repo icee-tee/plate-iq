@@ -88,6 +88,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .btn-sm.danger{border-color:rgba(220,38,38,.3);color:var(--red);}
 @media(max-width:900px){.two-col{grid-template-columns:1fr;}.metric-grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:600px){nav{padding:0 16px;}.wrap{padding:24px 16px;}.metric-grid{grid-template-columns:1fr 1fr;}}
+
+  /* Skeleton loading state */
+  .skeleton{background:linear-gradient(90deg,var(--border) 0%,rgba(26,26,26,.06) 50%,var(--border) 100%);background-size:200%;animation:shimmer 1.5s infinite;border-radius:var(--r);}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .skel-text{height:14px;margin-bottom:8px;border-radius:4px;}
+  .skel-num{height:36px;width:80px;border-radius:var(--r);margin-bottom:8px;}
+  .skel-bar{height:60px;border-radius:var(--r);}
+
 </style>
 </head>
 <body>
@@ -157,12 +165,49 @@ function buildReportView(data) {
   }
 
   if (!history.length) {
+    // Show skeleton dashboard — full layout with empty state banner
     document.getElementById('reportView').innerHTML =
+      '<div style="background:var(--amber-p);border:1px solid rgba(232,160,32,.3);border-radius:var(--r);padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">' +
+        '<span style="font-size:20px;">&#128338;</span>' +
+        '<div><div style="font-size:13.5px;font-weight:700;color:var(--ink);">Your first report is being prepared</div>' +
+        '<div style="font-size:12.5px;color:var(--amber-d);">Our team will log into your '+restaurant.platforms+' account within 48 hours. You will get an email when your first report is ready.</div></div>' +
+      '</div>' +
       '<div class="dash-header"><div class="dash-title">'+restaurant.name+'</div>' +
       '<div class="dash-sub">'+restaurant.postcode+' &middot; '+restaurant.platforms+'</div></div>' +
-      '<div class="empty"><div class="empty-icon">&#128202;</div>' +
-      '<div style="font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:8px;">Your first report is on its way</div>' +
-      '<div style="font-size:13.5px;color:var(--muted);line-height:1.6;max-width:400px;margin:0 auto;">Our team will log in to your '+restaurant.platforms+' account within 48 hours, pull your performance data, and generate your first weekly report. We'll email you when it's ready.</div>' +
+      // Skeleton metric cards
+      '<div class="metric-grid" style="margin-bottom:28px;">' +
+        ['Orders this week','Revenue','Avg order value','Rating'].map(function(label){
+          return '<div class="metric-card"><div class="metric-label">'+label+'</div>' +
+            '<div class="skeleton skel-num" style="margin-bottom:8px;"></div>' +
+            '<div class="skeleton skel-text" style="width:60%;"></div></div>';
+        }).join('') +
+      '</div>' +
+      // Skeleton two-col
+      '<div class="two-col">' +
+        '<div>' +
+          '<div class="card" style="margin-bottom:20px;">' +
+            '<div class="skeleton skel-text" style="width:60%;margin-bottom:12px;"></div>' +
+            '<div class="skeleton skel-text"></div>' +
+            '<div class="skeleton skel-text"></div>' +
+            '<div class="skeleton skel-text" style="width:80%;"></div>' +
+          '</div>' +
+          '<div class="card">' +
+            '<div class="skeleton skel-text" style="width:40%;margin-bottom:12px;"></div>' +
+            ['','',''].map(function(){ return '<div class="skeleton skel-text"></div>'; }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div class="card" style="margin-bottom:16px;">' +
+            '<div class="skeleton skel-text" style="width:50%;margin-bottom:16px;"></div>' +
+            '<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">' +
+              [28,40,55,38,75,90,60].map(function(h){
+                return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;">' +
+                  '<div class="skeleton" style="width:100%;height:'+Math.round(h/90*100)+'%;border-radius:3px 3px 0 0;"></div>' +
+                  '</div>';
+              }).join('') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
       '</div>';
     return;
   }
@@ -259,7 +304,7 @@ function buildAccountView(data) {
     '<div class="card" style="margin-bottom:20px;"><div class="card-title" style="margin-bottom:16px;">Your plan</div>' +
       '<div class="account-section">' +
         '<div class="account-row"><div><div class="account-label">Current plan</div><div class="account-value"><span class="plan-badge">'+(planLabels[plan]||plan)+'</span></div></div>' +
-          (plan !== 'none' ? '<button class="btn-sm" onclick="window.location.href='/onboarding'">Change plan</button>' : '<button class="btn-sm" onclick="window.location.href='/onboarding'">Choose a plan</button>') +
+          (plan !== 'none' ? '<button class="btn-sm" onclick="location.href=\"/onboarding\"" style="display:inline-block;">Change plan</button>' : '<button class="btn-sm" onclick="location.href=\"/onboarding\"">Choose a plan</button>') +
         '</div>' +
         '<div class="account-row"><div class="account-label">Status</div><div class="account-value" style="color:'+(planStatus==='active'?'var(--green)':'var(--red)')+';">'+(planStatus==='active'?'Active':'Inactive')+'</div></div>' +
         '<div class="account-row"><div class="account-label">Email</div><div class="account-value">'+(user.email||email)+'</div></div>' +
@@ -277,10 +322,10 @@ function buildAccountView(data) {
 }
 
 async function cancelSub() {
-  if (!confirm('Cancel your subscription? You'll keep access until the end of your current billing period.')) return;
+  if (!confirm('Cancel your subscription? You will keep access until the end of your current billing period.')) return;
   var r = await fetch('/api/cancel-subscription',{method:'POST',headers:{'x-session-token':token}});
   var d = await r.json();
-  if (d.ok) alert('Subscription cancelled. You'll keep access until the end of your current period.');
+  if (d.ok) alert('Subscription cancelled. You will keep access until the end of your current period.');
   else alert(d.error || 'Could not cancel. Please contact us.');
 }
 
