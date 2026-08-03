@@ -176,27 +176,15 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 48px
     <div class="blur-overlay">
       <div class="lock-card" id="lockCard">
         <div class="lock-icon">&#128274;</div>
-        <div class="lock-title">Unlock your full weekly dashboard</div>
-        <div class="lock-sub">Choose a plan and we will log into your Uber Eats and Just Eat accounts, pull your real data, and have your dashboard live within 48 hours.</div>
-        <div class="plan-grid">
-          <div class="plan-opt" id="po-starter" onclick="pickPlan('starter')">
-            <div class="plan-dot" id="pd-starter"></div>
-            <div style="flex:1;"><div class="plan-name">Starter</div><div class="plan-desc">Weekly report. You implement.</div></div>
-            <div class="plan-price">&pound;199/mo</div>
-          </div>
-          <div class="plan-opt selected" id="po-growth" onclick="pickPlan('growth')">
-            <div class="plan-dot" id="pd-growth" style="border-color:var(--amber);background:var(--amber);"></div>
-            <div style="flex:1;"><div class="plan-name">Growth <span style="font-size:10px;background:var(--amber);color:var(--ink);padding:1px 7px;border-radius:99px;font-family:var(--sans);font-weight:700;margin-left:4px;">Popular</span></div><div class="plan-desc">Monthly implementation by us.</div></div>
-            <div class="plan-price">&pound;499/mo</div>
-          </div>
-          <div class="plan-opt" id="po-partner" onclick="pickPlan('partner')">
-            <div class="plan-dot" id="pd-partner"></div>
-            <div style="flex:1;"><div class="plan-name">Partner</div><div class="plan-desc">Weekly managed changes + calls.</div></div>
-            <div class="plan-price">&pound;999/mo</div>
-          </div>
+        <div class="lock-title">Get your full weekly dashboard</div>
+        <div class="lock-sub">Create a free account to see our plans and get started. Our team will log into your delivery accounts and have your dashboard live within 48 hours.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:18px;">
+          <span style="font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:4px 12px;border-radius:99px;">&#9989; Weekly AI report</span>
+          <span style="font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:4px 12px;border-radius:99px;">&#9989; Live performance dashboard</span>
+          <span style="font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:4px 12px;border-radius:99px;">&#9989; We manage your listing</span>
         </div>
-        <button class="btn-continue" onclick="showRegModal()">Continue with <span id="planLabel">Growth</span> plan &rarr;</button>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:10px;">No contracts. Cancel anytime.</div>
+        <button class="btn-continue" onclick="showRegModal()">Create account &amp; see plans &rarr;</button>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:10px;">Free to create. Plans from &pound;199/mo. No contracts.</div>
       </div>
     </div>
   </div>
@@ -208,9 +196,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 48px
 <div class="modal-overlay" id="regModal">
   <div class="modal-card">
     <button class="modal-close" onclick="document.getElementById('regModal').classList.remove('open')">&times;</button>
-    <div class="modal-plan-badge" id="modalPlanBadge">Growth &mdash; &pound;499/mo</div>
     <div class="modal-title">Create your account</div>
-    <div class="modal-sub">Your dashboard will be live within 48 hours once our team has set up your account.</div>
+    <div class="modal-sub">You will choose your plan on the next screen. Your dashboard will be live within 48 hours.</div>
     <div class="f-group"><label>Email</label><input type="email" id="re-email" placeholder="you@restaurant.com"></div>
     <div class="f-group"><label>Password</label><input type="password" id="re-pwd" placeholder="At least 6 characters"></div>
     <button class="btn-full" onclick="register()" id="re-btn">Create account &amp; continue &rarr;</button>
@@ -243,7 +230,6 @@ function pickPlan(plan) {
 }
 
 function showRegModal() {
-  document.getElementById('modalPlanBadge').textContent = planLabels[selPlan] || selPlan;
   var emailEl = document.getElementById('re-email');
   var stored  = sessionStorage.getItem('piq_email');
   if (stored && emailEl) emailEl.value = stored;
