@@ -73,20 +73,43 @@ h2{font-family:var(--serif);font-size:28px;color:var(--ink);margin-bottom:8px;}
     <div class="plan-grid">
       <div class="plan-card" id="plan-starter" onclick="selectPlan('starter')">
         <div class="plan-radio" id="radio-starter"></div>
-        <div class="plan-info"><div class="plan-name">Starter</div><div class="plan-desc">Weekly AI report + dashboard. You implement the recommendations.</div></div>
+        <div class="plan-info">
+          <div class="plan-name">Starter</div>
+          <ul style="list-style:none;margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Weekly AI performance report</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Full performance dashboard</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Rating &amp; review monitoring</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>You implement the recommendations</li>
+          </ul>
+        </div>
         <div class="plan-price">&pound;199<small>/ month</small></div>
       </div>
       <div class="plan-card" id="plan-growth" onclick="selectPlan('growth')">
         <div class="plan-radio" id="radio-growth"></div>
         <div class="plan-info">
           <div class="plan-name">Growth <span style="font-size:11px;background:var(--amber);color:var(--ink);padding:2px 8px;border-radius:99px;font-family:var(--sans);font-weight:700;margin-left:4px;">Popular</span></div>
-          <div class="plan-desc">Everything in Starter + monthly implementation by our team.</div>
+          <ul style="list-style:none;margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Everything in Starter</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Monthly menu optimisation &mdash; we make changes</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Photo audit + upload recommendations</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Promotional strategy &amp; scheduling</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>WhatsApp support channel</li>
+          </ul>
         </div>
         <div class="plan-price">&pound;499<small>/ month</small></div>
       </div>
       <div class="plan-card" id="plan-partner" onclick="selectPlan('partner')">
         <div class="plan-radio" id="radio-partner"></div>
-        <div class="plan-info"><div class="plan-name">Partner</div><div class="plan-desc">Full weekly management, strategy calls, dedicated account manager.</div></div>
+        <div class="plan-info">
+          <div class="plan-name">Partner</div>
+          <ul style="list-style:none;margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Everything in Growth</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Weekly managed changes &mdash; not monthly</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Seasonal menu planning</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Monthly strategy call</li>
+            <li style="font-size:12px;color:var(--muted);display:flex;gap:6px;"><span style="color:var(--green);">&#10003;</span>Dedicated account manager</li>
+          </ul>
+        </div>
         <div class="plan-price">&pound;999<small>/ month</small></div>
       </div>
     </div>
@@ -217,13 +240,49 @@ async function submitOnboarding() {
   } catch(e) { err.textContent=e.message||'Something went wrong.'; err.style.display='block'; btn.disabled=false; btn.textContent='Complete setup &rarr;'; }
 }
 try {
-  var interest = JSON.parse(localStorage.getItem('piq_interest')||'null');
+  var interest = JSON.parse(localStorage.getItem('piq_interest') || 'null');
   if (interest) {
+    // Plan
     if (interest.plan) selectPlan(interest.plan);
+
+    // Restaurant details
     if (interest.restaurantName) document.getElementById('restName').value = interest.restaurantName;
-    if (interest.postcode) document.getElementById('restPostcode').value = interest.postcode;
+    if (interest.postcode)       document.getElementById('restPostcode').value = interest.postcode;
+
+    // Cuisine — match select option text
+    if (interest.cuisine) {
+      var cuisineEl = document.getElementById('restCuisine');
+      for (var i = 0; i < cuisineEl.options.length; i++) {
+        if (cuisineEl.options[i].value === interest.cuisine || cuisineEl.options[i].text === interest.cuisine) {
+          cuisineEl.selectedIndex = i;
+          break;
+        }
+      }
+    }
+
+    // Platforms — match the select option text
+    if (interest.platforms) {
+      var platEl = document.getElementById('restPlatforms');
+      var plat   = interest.platforms.toLowerCase();
+      var hasUE  = plat.includes('ubereats') || plat.includes('uber eats');
+      var hasJE  = plat.includes('justeeat') || plat.includes('just eat');
+      var hasDR  = plat.includes('deliveroo');
+      var targetText = '';
+      if      (hasUE && hasJE && hasDR) targetText = 'All three platforms';
+      else if (hasUE && hasJE)          targetText = 'Uber Eats + Just Eat';
+      else if (hasUE && hasDR)          targetText = 'Uber Eats + Deliveroo';
+      else if (hasJE && hasDR)          targetText = 'Just Eat + Deliveroo';
+      else if (hasUE)                   targetText = 'Uber Eats only';
+      else if (hasJE)                   targetText = 'Just Eat only';
+      else if (hasDR)                   targetText = 'Deliveroo only';
+      if (targetText) {
+        for (var j = 0; j < platEl.options.length; j++) {
+          if (platEl.options[j].text === targetText) { platEl.selectedIndex = j; break; }
+        }
+      }
+    }
   }
-} catch(e) {}
+} catch(e) { console.warn('Pre-fill error:', e); }
 </script>
 </body>
 </html>
