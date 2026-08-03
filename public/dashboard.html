@@ -19,7 +19,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .nav-email{font-size:12.5px;color:var(--muted);}
 .btn-logout{font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 10px;}
 /* Layout */
-.wrap{max-width:1200px;margin:0 auto;padding:36px 40px 80px;}
+.wrap{max-width:1280px;margin:0 auto;padding:36px 40px 80px;width:100%;}
 /* Header */
 .dash-header{margin-bottom:32px;}
 .dash-title{font-family:var(--serif);font-size:clamp(22px,3vw,32px);color:var(--ink);margin-bottom:4px;}
@@ -35,7 +35,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .delta-down{color:var(--red);}
 .delta-flat{color:var(--muted);}
 /* Two-col layout */
-.two-col{display:grid;grid-template-columns:1fr 340px;gap:20px;margin-bottom:20px;}
+.two-col{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px;width:100%;}
 .card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:22px;}
 .card-title{font-family:var(--serif);font-size:17px;color:var(--ink);margin-bottom:4px;}
 .card-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
@@ -86,7 +86,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .plan-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--amber-p);color:var(--amber-d);}
 .btn-sm{font-size:12px;font-weight:700;padding:6px 14px;border-radius:var(--r);border:1.5px solid var(--border-m);background:transparent;color:var(--ink);cursor:pointer;}
 .btn-sm.danger{border-color:rgba(220,38,38,.3);color:var(--red);}
-@media(max-width:900px){.two-col{grid-template-columns:1fr;}.metric-grid{grid-template-columns:repeat(2,1fr);}}
+@media(min-width:900px){.two-col{grid-template-columns:1fr 340px;}}
+  @media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:480px){.metric-grid{grid-template-columns:1fr 1fr;}.wrap{padding:20px 16px;}}
 @media(max-width:600px){nav{padding:0 16px;}.wrap{padding:24px 16px;}.metric-grid{grid-template-columns:1fr 1fr;}}
 
   /* Skeleton loading state */
@@ -333,7 +335,11 @@ async function cancelSub() {
 
   // Build trend chart
   function buildTrendChart(history, metric) {
-    if (!history || history.length < 2) return '';
+    if (!history || !history.length) return '';
+    if (history.length === 1) {
+      return '<div class="trend-chart-wrap"><div class="trend-chart-title">Performance trend</div>' +
+        '<div style="font-size:13px;color:var(--muted);padding:20px 0;">Chart will show trends as more weekly data is added. Come back next week to see your first trend.</div></div>';
+    }
     var data = history.slice(0,12).reverse();
     var vals = data.map(function(w){ return Number(w[metric]||0); });
     var maxV = Math.max.apply(null, vals) || 1;
@@ -401,7 +407,7 @@ async function cancelSub() {
     return html;
   }
 
-  function toggleCheck(el, key) {
+  function toggleCheck(el) { var key = el.dataset.key || el.getAttribute('data-key');
     el.classList.toggle('done');
     var id = el.id;
     var saved = {};
