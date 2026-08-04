@@ -34,6 +34,8 @@ tr:hover td{background:var(--bg);}
 .plan-pill.active{background:var(--green-p);color:var(--green);}
 .btn-xs{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:var(--r);border:1.5px solid var(--border-m);background:var(--card);color:var(--ink);cursor:pointer;margin-right:4px;}
 .btn-xs.danger{border-color:rgba(220,38,38,.3);color:var(--red);}
+.ptab{font-family:var(--sans);font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;border:1.5px solid var(--border-m);background:var(--card);color:var(--muted);cursor:pointer;}
+.ptab.active{background:var(--ink);border-color:var(--ink);color:#fff;}
 .btn-xs.primary{background:var(--ink);border-color:var(--ink);color:#fff;}
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center;padding:24px;}
@@ -102,6 +104,16 @@ tr:hover td{background:var(--bg);}
     <div id="dataModalRestaurant" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></div>
     <input type="hidden" id="dm-restId">
     <div class="f-group"><label>Week ending (Sunday) *</label><input type="date" id="dm-week"></div>
+    <div class="f-group">
+      <label>Platform</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;" id="platformTabs">
+        <button type="button" class="ptab active" data-plat="all"     onclick="setPlatformTab(this)">All platforms (combined)</button>
+        <button type="button" class="ptab"         data-plat="Uber Eats" onclick="setPlatformTab(this)" style="border-color:#06c167;">Uber Eats</button>
+        <button type="button" class="ptab"         data-plat="Just Eat"  onclick="setPlatformTab(this)" style="border-color:#ff8000;">Just Eat</button>
+        <button type="button" class="ptab"         data-plat="Deliveroo" onclick="setPlatformTab(this)" style="border-color:#00ccbc;">Deliveroo</button>
+      </div>
+    </div>
+    <input type="hidden" id="dm-platform" value="all">
 
     <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--border);">Performance numbers</div>
     <div class="f-row">
@@ -280,6 +292,12 @@ function buildActions(c) {
 function openDataModalBtn(btn) { openDataModal(btn.dataset.rid, btn.dataset.rname); }
 function viewClientBtn(btn) { viewClient(btn.dataset.email); }
 function deleteClientBtn(btn) { deleteClient(btn.dataset.email); }
+function setPlatformTab(btn) {
+  document.querySelectorAll('.ptab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('dm-platform').value = btn.dataset.plat;
+}
+
 function openDataModal(restId, restName) {
   document.getElementById('dm-restId').value = restId;
   document.getElementById('dataModalRestaurant').textContent = restName;
@@ -311,6 +329,7 @@ async function saveData() {
       body: JSON.stringify({
         restaurantId:  gv('dm-restId'),
         weekEnding:    gv('dm-week'),
+        platform:      gv('dm-platform') || 'all',
         orders:        gv('dm-orders'),
         revenue:       gv('dm-revenue'),
         aov:           gv('dm-aov'),
@@ -351,7 +370,8 @@ async function generateReport() {
       headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
       body: JSON.stringify({
         restaurantId: document.getElementById('dm-restId').value,
-        weekEnding:   document.getElementById('dm-week').value
+        weekEnding:   document.getElementById('dm-week').value,
+        platform:     document.getElementById('dm-platform').value || 'all'
       })
     });
     var d = await res.json();
