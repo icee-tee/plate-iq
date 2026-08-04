@@ -86,7 +86,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .plan-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--amber-p);color:var(--amber-d);}
 .btn-sm{font-size:12px;font-weight:700;padding:6px 14px;border-radius:var(--r);border:1.5px solid var(--border-m);background:transparent;color:var(--ink);cursor:pointer;}
 .btn-sm.danger{border-color:rgba(220,38,38,.3);color:var(--red);}
-@media(min-width:900px){.two-col{grid-template-columns:1fr 340px;}}
+@media(min-width:1024px){.two-col{grid-template-columns:1fr 360px;}}
   @media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:480px){.metric-grid{grid-template-columns:1fr 1fr;}.wrap{padding:20px 16px;}}
 @media(max-width:600px){nav{padding:0 16px;}.wrap{padding:24px 16px;}.metric-grid{grid-template-columns:1fr 1fr;}}
@@ -273,7 +273,7 @@ function buildReportView(data) {
         (rep ? '<div class="card" style="margin-bottom:20px;"><div class="card-title">'+(rep.headline||'Weekly analysis')+'</div><div class="card-sub">'+(rep.summary||'')+'</div>' +
           (insightsHtml ? '<div style="margin-top:4px;">'+insightsHtml+'</div>' : '') + '</div>' : '') +
         (actionsHtml||longerHtml ? '<div class="card"><div class="card-title">Action checklist</div><div class="card-sub">Tick off as you complete — resets each week</div>' +
-          buildChecklist(rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], currentWeek.week_ending) +
+          buildChecklist(rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], currentWeek.week_ending, dashData&&dashData.user&&dashData.user.plan) +
           '</div>' : '') +
       '</div>' +
       '<div>' +
@@ -380,34 +380,48 @@ async function cancelSub() {
   }
 
   // Build ticked checklist
-  function buildChecklist(thisWeek, longerTerm, weekEnding) {
+  function buildChecklist(thisWeek, longerTerm, weekEnding, plan) {
     var key = 'piq_checks_' + weekEnding;
     var saved = {};
     try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
+    var isSelfServe = (plan === 'starter' || !plan);
+    var heading = isSelfServe ? 'Your action checklist' : 'What we are working on for you';
+    var subText  = isSelfServe
+      ? 'Tick off as you complete each action this week'
+      : 'Our team is handling these — we will update you when done';
 
     function checkItem(text, tag, tagCls) {
-      var id = 'chk_' + text.replace(/\W/g,'').slice(0,20);
+      var id = 'chk' + text.replace(/[^a-zA-Z0-9]/g,'').slice(0,18);
       var done = !!saved[id];
-      return '<div class="checklist-item'+(done?' done':'')+'" id="'+id+'" onclick="toggleCheck(this,\''+key+'\')">' +
-        '<div class="check-box">'+(done?'&#10003;':'')+'</div>' +
-        '<div class="check-text">'+text+'</div>' +
-        '<span class="check-tag '+tagCls+'">'+tag+'</span>' +
-      '</div>';
+      var el = '<div class="checklist-item' + (done ? ' done' : '') + '" ';
+      el += 'id="' + id + '" ';
+      el += 'data-wkey="' + key + '" ';
+      if (isSelfServe) el += 'onclick="toggleCheck(this)" ';
+      el += '>';
+      el += '<div class="check-box">' + (done ? '&#10003;' : '') + '</div>';
+      el += '<div class="check-text">' + text + '</div>';
+      el += '<span class="check-tag ' + tagCls + '">' + tag + '</span>';
+      el += '</div>';
+      return el;
     }
 
-    var html = '';
+    var html = '<div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;">' + heading + '</div>';
+    html += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">' + subText + '</div>';
+
     if (thisWeek.length) {
       html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">This week</div>';
-      html += thisWeek.map(function(a){ return checkItem(a,'Now','tag-now'); }).join('');
+      html += thisWeek.map(function(a){ return checkItem(a, isSelfServe ? 'Do this' : 'In progress', 'tag-now'); }).join('');
     }
     if (longerTerm.length) {
-      html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">2-4 weeks</div>';
-      html += longerTerm.map(function(a){ return checkItem(a,'Soon','tag-week'); }).join('');
+      html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">Coming up</div>';
+      html += longerTerm.map(function(a){ return checkItem(a, '2-4 weeks', 'tag-week'); }).join('');
     }
     return html;
   }
 
-  function toggleCheck(el) { var key = el.dataset.key || el.getAttribute('data-key');
+function toggleCheck(el) {
+    var key = el.getAttribute('data-wkey');
+    if (!key) return;
     el.classList.toggle('done');
     var id = el.id;
     var saved = {};
@@ -420,6 +434,32 @@ async function cancelSub() {
       el.querySelector('.check-box').innerHTML = '';
     }
     try { localStorage.setItem(key, JSON.stringify(saved)); } catch(e){}
+  }
+
+
+  async function sendMessage() {
+    var msg = document.getElementById('contactMsg');
+    var status = document.getElementById('contactMsgStatus');
+    if (!msg || !msg.value.trim()) return;
+    status.style.display = 'block';
+    status.style.color = 'var(--muted)';
+    status.textContent = 'Sending...';
+    try {
+      var res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-session-token': token },
+        body: JSON.stringify({ message: msg.value.trim() })
+      });
+      var d = await res.json();
+      if (d.ok) {
+        status.style.color = 'var(--green)';
+        status.textContent = 'Message sent. We will get back to you soon.';
+        msg.value = '';
+      } else throw new Error(d.error);
+    } catch(e) {
+      status.style.color = 'var(--red)';
+      status.textContent = 'Could not send. Please email us directly.';
+    }
   }
 
 // Load dashboard
