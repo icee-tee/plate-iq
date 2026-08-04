@@ -35,7 +35,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .delta-down{color:var(--red);}
 .delta-flat{color:var(--muted);}
 /* Two-col layout */
-.two-col{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px;width:100%;}
+.main-col{width:100%;min-width:0;}
 .card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:22px;}
 .card-title{font-family:var(--serif);font-size:17px;color:var(--ink);margin-bottom:4px;}
 .card-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
@@ -86,7 +86,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .plan-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--amber-p);color:var(--amber-d);}
 .btn-sm{font-size:12px;font-weight:700;padding:6px 14px;border-radius:var(--r);border:1.5px solid var(--border-m);background:transparent;color:var(--ink);cursor:pointer;}
 .btn-sm.danger{border-color:rgba(220,38,38,.3);color:var(--red);}
-@media(min-width:1024px){.two-col{grid-template-columns:1fr 360px;}}
+@media(min-width:1024px){.main-col{display:grid;grid-template-columns:1fr 340px;gap:20px;}}
   @media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:480px){.metric-grid{grid-template-columns:1fr 1fr;}.wrap{padding:20px 16px;}}
 @media(max-width:600px){nav{padding:0 16px;}.wrap{padding:24px 16px;}.metric-grid{grid-template-columns:1fr 1fr;}}
@@ -119,365 +119,413 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
   <div id="accountView" style="display:none;"></div>
 </div>
 
+
 <script>
 var token = localStorage.getItem('piq_token');
 var email = localStorage.getItem('piq_email');
 if (!token) window.location.href = '/login';
 document.getElementById('navEmail').textContent = email || '';
 
-var dashData = null;
-var currentWeekIdx = 0;
+var dashData  = null;
+var weekIdx   = 0;
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function fmt(n)    { return Number(n||0).toLocaleString('en-GB'); }
+function fmtGBP(n) { return '\u00a3' + Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function deltaHtml(val, isCurrency) {
+  var v = Number(val||0);
+  if (v === 0) return '<div class="metric-delta delta-flat">\u2192 No change</div>';
+  var cls  = v > 0 ? 'delta-up' : 'delta-down';
+  var arr  = v > 0 ? '\u2191' : '\u2193';
+  var disp = isCurrency ? fmtGBP(Math.abs(v)) : fmt(Math.abs(v));
+  return '<div class="metric-delta ' + cls + '">' + arr + ' ' + disp + ' vs last week</div>';
+}
 
 function logout() {
-  fetch('/api/logout',{method:'POST',headers:{'x-session-token':token}});
-  localStorage.removeItem('piq_token'); localStorage.removeItem('piq_email');
+  fetch('/api/logout',{method:'POST',headers:{'x-session-token':token}}).catch(()=>{});
+  localStorage.removeItem('piq_token');
+  localStorage.removeItem('piq_email');
   window.location.href = '/';
 }
 
 function showView(v) {
   document.getElementById('reportView').style.display  = v==='report'  ? 'block' : 'none';
   document.getElementById('accountView').style.display = v==='account' ? 'block' : 'none';
-  document.querySelectorAll('.nav-link').forEach(function(l,i){ l.classList.toggle('active', i===(v==='report'?0:1)); });
+  document.querySelectorAll('.nav-link').forEach(function(l,i){
+    l.classList.toggle('active', i===(v==='report'?0:1));
+  });
 }
 
-function fmt(n) { return Number(n).toLocaleString('en-GB'); }
-function fmtGBP(n) { return '£' + Number(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-
-function deltaHtml(val, unit) {
-  if (val == null || val == 0) return '<div class="metric-delta delta-flat">&rarr; No change</div>';
-  var v = Number(val);
-  var cls = v > 0 ? 'delta-up' : 'delta-down';
-  var arrow = v > 0 ? '&uarr;' : '&darr;';
-  return '<div class="metric-delta '+cls+'">'+arrow+' '+(unit||'')+Math.abs(v).toFixed(unit==='£'?2:0)+' vs last week</div>';
+// ── Trend chart ────────────────────────────────────────────────────────────────
+function buildTrendChart(history, metric) {
+  if (!history || history.length < 2) {
+    return '<div class="trend-chart-wrap"><div class="trend-chart-title">Performance trend</div>' +
+      '<div style="font-size:13px;color:var(--muted);padding:16px 0;">Chart will appear once you have 2+ weeks of data.</div></div>';
+  }
+  var data = history.slice(0,12).reverse();
+  var vals = data.map(function(w){ return Number(w[metric]||0); });
+  var maxV = Math.max.apply(null,vals)||1;
+  var tabLabels = {orders:'Orders',revenue:'Revenue',aov:'Avg order',rating:'Rating'};
+  var tabsHtml = Object.keys(tabLabels).map(function(t){
+    return '<button class="trend-tab'+(t===metric?' active':'')+'" onclick="switchChart(this,\'' + t + '\')">' + tabLabels[t] + '</button>';
+  }).join('');
+  var barsHtml = data.map(function(w){
+    var v   = Number(w[metric]||0);
+    var h   = Math.max(6, Math.round(v/maxV*100));
+    var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    var val = metric==='revenue' ? fmtGBP(v) : metric==='aov' ? fmtGBP(v) : fmt(v);
+    return '<div class="chart-bar-wrap"><div class="chart-val">'+val+'</div>' +
+      '<div class="chart-bar" style="height:'+h+'%"></div>' +
+      '<div class="chart-label">'+lbl+'</div></div>';
+  }).join('');
+  return '<div class="trend-chart-wrap" id="trendChart">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+      '<div class="trend-chart-title">Performance trend</div>' +
+      '<div class="trend-tabs" id="trendTabs">' + tabsHtml + '</div>' +
+    '</div>' +
+    '<div class="chart-bars" id="chartBars">' + barsHtml + '</div>' +
+  '</div>';
 }
 
+function switchChart(btn, metric) {
+  document.querySelectorAll('.trend-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  if (!dashData) return;
+  var history = dashData.history || [];
+  var data = history.slice(0,12).reverse();
+  var vals = data.map(function(w){ return Number(w[metric]||0); });
+  var maxV = Math.max.apply(null,vals)||1;
+  document.getElementById('chartBars').innerHTML = data.map(function(w){
+    var v   = Number(w[metric]||0);
+    var h   = Math.max(6, Math.round(v/maxV*100));
+    var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    var val = metric==='revenue'||metric==='aov' ? fmtGBP(v) : fmt(v);
+    return '<div class="chart-bar-wrap"><div class="chart-val">'+val+'</div>' +
+      '<div class="chart-bar" style="height:'+h+'%"></div>' +
+      '<div class="chart-label">'+lbl+'</div></div>';
+  }).join('');
+}
+
+// ── Checklist ──────────────────────────────────────────────────────────────────
+function renderChecklist(containerId, thisWeek, longerTerm, weekEnding, plan) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  var key = 'piq_chk_' + weekEnding;
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
+  var isSelf = (!plan || plan === 'starter');
+  var html = '';
+
+  function makeItem(text, tag, tagCls) {
+    var id = 'c' + text.replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+    var done = !!saved[id];
+    return '<div class="checklist-item' + (done?' done':'') + '" id="' + id + '" data-wkey="' + key + '">' +
+      '<div class="check-box">' + (done?'&#10003;':'') + '</div>' +
+      '<div class="check-text">' + text + '</div>' +
+      '<span class="check-tag ' + tagCls + '">' + tag + '</span>' +
+    '</div>';
+  }
+
+  if (thisWeek.length) {
+    html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">' +
+      (isSelf ? 'Do this week' : 'We are doing this') + '</div>';
+    html += thisWeek.map(function(a){ return makeItem(a, isSelf?'Action':'In progress', 'tag-now'); }).join('');
+  }
+  if (longerTerm.length) {
+    html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">Coming up</div>';
+    html += longerTerm.map(function(a){ return makeItem(a, '2-4 weeks', 'tag-week'); }).join('');
+  }
+
+  container.innerHTML = html;
+
+  // Wire up click handlers AFTER injecting HTML
+  container.querySelectorAll('.checklist-item').forEach(function(el) {
+    if (!isSelf) return; // managed plan = not clickable
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', function() {
+      this.classList.toggle('done');
+      var id   = this.id;
+      var wkey = this.getAttribute('data-wkey');
+      var box  = this.querySelector('.check-box');
+      var sv   = {};
+      try { sv = JSON.parse(localStorage.getItem(wkey)||'{}'); } catch(e){}
+      if (this.classList.contains('done')) { sv[id]=true; box.innerHTML='&#10003;'; }
+      else { delete sv[id]; box.innerHTML=''; }
+      try { localStorage.setItem(wkey, JSON.stringify(sv)); } catch(e){}
+    });
+  });
+}
+
+// ── Main report render ─────────────────────────────────────────────────────────
 function buildReportView(data) {
   var restaurant = data.restaurant;
   var history    = data.history || [];
-  var report     = data.latestReport;
+  var plan       = data.user && data.user.plan;
 
   if (!restaurant) {
     document.getElementById('reportView').innerHTML =
       '<div class="empty"><div class="empty-icon">&#128197;</div>' +
-      '<div style="font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:8px;">Setup not complete</div>' +
-      '<div style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">Complete your account setup to get your first report.</div>' +
-      '<a href="/onboarding" style="display:inline-block;font-family:var(--sans);font-size:14px;font-weight:700;background:var(--ink);color:#fff;text-decoration:none;border-radius:var(--r);padding:12px 24px;">Complete setup &rarr;</a>' +
-      '</div>';
+      '<div style="font-family:var(--serif);font-size:20px;color:var(--ink);margin-bottom:8px;">Setup not complete</div>' +
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Complete your account setup to get started.</div>' +
+      '<a href="/onboarding" style="display:inline-block;font-family:var(--sans);font-size:13.5px;font-weight:700;background:var(--ink);color:#fff;text-decoration:none;border-radius:var(--r);padding:10px 22px;">Complete setup \u2192</a></div>';
     return;
   }
 
-  if (!history.length) {
-    // Show skeleton dashboard — full layout with empty state banner
-    document.getElementById('reportView').innerHTML =
-      '<div style="background:var(--amber-p);border:1px solid rgba(232,160,32,.3);border-radius:var(--r);padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">' +
-        '<span style="font-size:20px;">&#128338;</span>' +
-        '<div><div style="font-size:13.5px;font-weight:700;color:var(--ink);">Your first report is being prepared</div>' +
-        '<div style="font-size:12.5px;color:var(--amber-d);">Our team will log into your '+restaurant.platforms+' account within 48 hours. You will get an email when your first report is ready.</div></div>' +
-      '</div>' +
-      '<div class="dash-header"><div class="dash-title">'+restaurant.name+'</div>' +
-      '<div class="dash-sub">'+restaurant.postcode+' &middot; '+restaurant.platforms+'</div></div>' +
-      // Skeleton metric cards
-      '<div class="metric-grid" style="margin-bottom:28px;">' +
-        ['Orders this week','Revenue','Avg order value','Rating'].map(function(label){
-          return '<div class="metric-card"><div class="metric-label">'+label+'</div>' +
-            '<div class="skeleton skel-num" style="margin-bottom:8px;"></div>' +
-            '<div class="skeleton skel-text" style="width:60%;"></div></div>';
-        }).join('') +
-      '</div>' +
-      // Skeleton two-col
-      '<div class="two-col">' +
-        '<div>' +
-          '<div class="card" style="margin-bottom:20px;">' +
-            '<div class="skeleton skel-text" style="width:60%;margin-bottom:12px;"></div>' +
-            '<div class="skeleton skel-text"></div>' +
-            '<div class="skeleton skel-text"></div>' +
-            '<div class="skeleton skel-text" style="width:80%;"></div>' +
-          '</div>' +
-          '<div class="card">' +
-            '<div class="skeleton skel-text" style="width:40%;margin-bottom:12px;"></div>' +
-            ['','',''].map(function(){ return '<div class="skeleton skel-text"></div>'; }).join('') +
-          '</div>' +
-        '</div>' +
-        '<div>' +
-          '<div class="card" style="margin-bottom:16px;">' +
-            '<div class="skeleton skel-text" style="width:50%;margin-bottom:16px;"></div>' +
-            '<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">' +
-              [28,40,55,38,75,90,60].map(function(h){
-                return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;">' +
-                  '<div class="skeleton" style="width:100%;height:'+Math.round(h/90*100)+'%;border-radius:3px 3px 0 0;"></div>' +
-                  '</div>';
-              }).join('') +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    return;
-  }
+  var idx  = Math.min(weekIdx, Math.max(0, history.length-1));
+  var week = history[idx] || {};
+  var rep  = week.report_data || null;
+  var sc   = rep ? rep.scorecard : null;
 
-  var weekHistory = history;
-  var idx = Math.min(currentWeekIdx, weekHistory.length - 1);
-  var currentWeek = weekHistory[idx];
-  var rep = currentWeek.report_data || report;
-  var sc  = rep ? rep.scorecard : null;
-
-  var weekSelectorHtml = weekHistory.length > 1 ? '<div class="week-selector">' +
-    weekHistory.map(function(w,i) {
-      var d = new Date(w.week_ending);
-      var label = 'w/e '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-      return '<button class="week-btn'+(i===idx?' active':'')+'" onclick="selectWeek('+i+')">'+label+'</button>';
+  // Week selector
+  var weekSelector = history.length > 1 ? '<div class="week-selector">' +
+    history.map(function(w,i){
+      var lbl = 'w/e ' + new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      return '<button class="week-btn'+(i===idx?' active':'')+'" onclick="selectWeek('+i+')">' + lbl + '</button>';
     }).join('') + '</div>' : '';
 
-  var metricsHtml = sc ? '<div class="metric-grid">' +
-    '<div class="metric-card"><div class="metric-label">Orders</div><div class="metric-value">'+fmt(sc.orders.value)+'</div>'+deltaHtml(sc.orders.delta,'')+'</div>' +
-    '<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+fmtGBP(sc.revenue.value)+'</div>'+deltaHtml(sc.revenue.delta,'£')+'</div>' +
-    '<div class="metric-card"><div class="metric-label">Avg order value</div><div class="metric-value">'+fmtGBP(sc.aov.value)+'</div>'+deltaHtml(sc.aov.delta,'£')+'</div>' +
-    '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+sc.rating.value+'</div>'+deltaHtml(sc.rating.delta,'')+'</div>' +
-    '</div>' : '';
-
-  // Pulse chart from weekly data
-  var dayData = rep && rep.weeklyInsight ? [] : [];
-  var pulseHtml = '';
-  if (weekHistory.length > 1) {
-    var orders = weekHistory.slice(0,8).reverse().map(function(w){ return {label:'w/e '+new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'}), orders:w.orders}; });
-    var maxO = Math.max.apply(null, orders.map(function(o){return o.orders||0;}));
-    pulseHtml = '<div class="pulse-chart">' +
-      orders.map(function(o){
-        var h = maxO > 0 ? Math.max(6, Math.round((o.orders||0)/maxO*100)) : 6;
-        var cls = o.orders === maxO ? 'peak' : o.orders < maxO*0.5 ? 'low' : '';
-        return '<div class="pulse-bar-wrap"><div class="pulse-bar '+cls+'" style="height:'+h+'%;"><span class="pulse-val">'+fmt(o.orders||0)+'</span></div><div class="pulse-day">'+o.label+'</div></div>';
-      }).join('') + '</div>';
+  // Metric cards
+  var metricsHtml = '';
+  if (sc) {
+    metricsHtml = '<div class="metric-grid">' +
+      '<div class="metric-card"><div class="metric-label">Orders</div><div class="metric-value">'+fmt(sc.orders.value)+'</div>'+deltaHtml(sc.orders.delta,false)+'</div>' +
+      '<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+fmtGBP(sc.revenue.value)+'</div>'+deltaHtml(sc.revenue.delta,true)+'</div>' +
+      '<div class="metric-card"><div class="metric-label">Avg order value</div><div class="metric-value">'+fmtGBP(sc.aov.value)+'</div>'+deltaHtml(sc.aov.delta,true)+'</div>' +
+      '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+sc.rating.value+'</div>'+deltaHtml(sc.rating.delta,false)+'</div>' +
+    '</div>';
+  } else if (week.orders) {
+    // No report yet but we have raw data
+    metricsHtml = '<div class="metric-grid">' +
+      '<div class="metric-card"><div class="metric-label">Orders</div><div class="metric-value">'+fmt(week.orders)+'</div><div class="metric-delta delta-flat">Data logged</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+fmtGBP(week.revenue)+'</div><div class="metric-delta delta-flat">Data logged</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Avg order value</div><div class="metric-value">'+fmtGBP(week.aov)+'</div><div class="metric-delta delta-flat">Data logged</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+(week.rating||'--')+'</div><div class="metric-delta delta-flat">Data logged</div></div>' +
+    '</div>';
   }
 
-  var insightsHtml = rep && rep.insights ? rep.insights.map(function(ins){
-    return '<div class="alert '+(ins.type||'warning')+'"><div class="alert-icon">'+(ins.icon||'')+'</div><div><div class="alert-title">'+ins.title+'</div><div class="alert-body">'+ins.body+'</div></div></div>';
-  }).join('') : '';
+  // Insights
+  var insightsHtml = '';
+  if (rep && rep.insights) {
+    insightsHtml = (rep.insights||[]).map(function(ins){
+      return '<div class="alert '+(ins.type||'warning')+'">' +
+        '<div class="alert-icon">'+(ins.icon||'')+'</div>' +
+        '<div><div class="alert-title">'+ins.title+'</div><div class="alert-body">'+ins.body+'</div></div></div>';
+    }).join('');
+  }
 
-  var actionsHtml = rep && rep.thisWeekActions ? rep.thisWeekActions.map(function(a){
-    return '<div class="action-item"><div class="action-cb"></div><div class="action-text">'+a+'</div><span class="action-tag tag-q">This week</span></div>';
-  }).join('') : '';
+  // History sidebar
+  var historyHtml = history.length > 1 ? '<div class="card">' +
+    '<div class="card-title" style="margin-bottom:4px;">Report history</div>' +
+    '<div class="card-sub" style="margin-bottom:12px;">Click any week to view</div>' +
+    history.map(function(w,i){
+      var lbl = 'w/e ' + new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      return '<div class="history-item" onclick="selectWeek('+i+')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;">' +
+        '<div><div class="history-week">'+lbl+'</div><div class="history-meta">'+fmt(w.orders)+' orders \u00b7 '+fmtGBP(w.revenue)+'</div></div>' +
+        '<div style="font-size:12px;color:'+(w.report_data?'var(--green)':'var(--muted-l)')+'">'+(w.report_data?'\u2713 Report':'Pending')+'</div>' +
+      '</div>';
+    }).join('') + '</div>' : '';
 
-  var longerHtml = rep && rep.longerTermActions ? rep.longerTermActions.map(function(a){
-    return '<div class="action-item"><div class="action-cb"></div><div class="action-text">'+a+'</div><span class="action-tag tag-w">2-4 weeks</span></div>';
-  }).join('') : '';
-
+  // Full layout
   document.getElementById('reportView').innerHTML =
-    '<div class="dash-header"><div class="dash-title">'+restaurant.name+'</div>' +
-    '<div class="dash-sub">'+restaurant.postcode+' &middot; '+restaurant.platforms+'</div>' +
-    (rep ? '<div class="report-week">Week ending '+new Date(currentWeek.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>' : '') +
+    '<div class="dash-header">' +
+      '<div class="dash-title">' + restaurant.name + '</div>' +
+      '<div class="dash-sub">' + (restaurant.postcode||'') + ' \u00b7 ' + (restaurant.platforms||'') + '</div>' +
+      (week.week_ending ? '<div class="report-week">Week ending ' + new Date(week.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + '</div>' : '') +
     '</div>' +
-    weekSelectorHtml +
-    metricsHtml +
-    buildTrendChart(weekHistory, 'orders') +
-    '<div class="two-col">' +
-      '<div>' +
-        (rep ? '<div class="card" style="margin-bottom:20px;"><div class="card-title">'+(rep.headline||'Weekly analysis')+'</div><div class="card-sub">'+(rep.summary||'')+'</div>' +
-          (insightsHtml ? '<div style="margin-top:4px;">'+insightsHtml+'</div>' : '') + '</div>' : '') +
-        (actionsHtml||longerHtml ? '<div class="card"><div class="card-title">Action checklist</div><div class="card-sub">Tick off as you complete — resets each week</div>' +
-          buildChecklist(rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], currentWeek.week_ending, dashData&&dashData.user&&dashData.user.plan) +
-          '</div>' : '') +
+    weekSelector +
+    (metricsHtml || '') +
+    buildTrendChart(history, 'orders') +
+    '<div class="main-col">' +
+      '<div style="min-width:0;">' +
+        (rep ? '<div class="card" style="margin-bottom:16px;">' +
+          '<div class="card-title" style="margin-bottom:4px;">' + (rep.headline||'Weekly analysis') + '</div>' +
+          '<div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">' + (rep.summary||'') + '</div>' +
+          insightsHtml +
+        '</div>' : '') +
+        '<div class="card" style="margin-bottom:16px;">' +
+          '<div class="card-title" style="margin-bottom:4px;">'+(plan==='starter'?'Your action checklist':'What we are working on')+'</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">'+(plan==='starter'?'Tick off as you complete each action':'Our team is handling these this week')+'</div>' +
+          '<div id="checklistContainer"></div>' +
+        '</div>' +
+        '<div class="card">' +
+          '<div class="card-title" style="margin-bottom:4px;">Contact us</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Send us a message &mdash; we respond within a few hours</div>' +
+          '<textarea id="contactMsg" style="width:100%;font-family:var(--sans);font-size:13.5px;border:1.5px solid var(--border-m);border-radius:var(--r);padding:10px 14px;resize:vertical;min-height:80px;background:var(--bg);color:var(--ink);outline:none;box-sizing:border-box;" placeholder="Ask us anything about your listing, report, or account..."></textarea>' +
+          '<button onclick="sendMessage()" style="margin-top:8px;font-family:var(--sans);font-size:13px;font-weight:700;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:9px 20px;cursor:pointer;">Send message</button>' +
+          '<div id="contactMsgStatus" style="font-size:12.5px;margin-top:6px;display:none;"></div>' +
+        '</div>' +
       '</div>' +
-      '<div>' +
-        (pulseHtml ? '<div class="card" style="margin-bottom:16px;"><div class="card-title">Order trend</div><div class="card-sub">Last '+Math.min(weekHistory.length,8)+' weeks</div>'+pulseHtml+'</div>' : '') +
-        (weekHistory.length > 1 ? '<div class="card"><div class="card-title">Report history</div><div class="card-sub">Click any week to view</div>' +
-          weekHistory.map(function(w,i){
-            var d = new Date(w.week_ending);
-            var label = 'Week ending '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-            return '<div class="history-item" onclick="selectWeek('+i+')"><div><div class="history-week">'+label+'</div><div class="history-meta">'+fmt(w.orders||0)+' orders &middot; '+fmtGBP(w.revenue||0)+'</div></div>' +
-              (w.report_data ? '<div class="history-score">'+'✓'+'</div>' : '<div style="font-size:11px;color:var(--muted-l);">Pending</div>') + '</div>';
-          }).join('') + '</div>' : '') +
-      '</div>' +
+      '<div style="min-width:0;">' + historyHtml + '</div>' +
     '</div>';
+
+  // Now wire up checklist AFTER HTML is in DOM
+  if (rep) {
+    renderChecklist('checklistContainer', rep.thisWeekActions||[], rep.longerTermActions||[], week.week_ending, plan);
+  }
 }
 
 function selectWeek(idx) {
-  currentWeekIdx = idx;
+  weekIdx = idx;
   buildReportView(dashData);
   showView('report');
 }
 
+// ── Account view ──────────────────────────────────────────────────────────────
 function buildAccountView(data) {
   var user       = data.user || {};
   var restaurant = data.restaurant;
   var plan       = user.plan || 'none';
   var planStatus = user.plan_status || 'inactive';
-  var planLabels = {starter:'Starter - £199/mo', growth:'Growth - £499/mo', partner:'Partner - £999/mo', none:'No active plan'};
+  var planNames  = {starter:'Starter \u2014 \u00a3199/mo', growth:'Growth \u2014 \u00a3499/mo', partner:'Partner \u2014 \u00a3999/mo', none:'No active plan'};
 
   document.getElementById('accountView').innerHTML =
-    '<div class="dash-header"><div class="dash-title">Account</div><div class="dash-sub">Manage your plan and restaurant details</div></div>' +
-    '<div class="card" style="margin-bottom:20px;"><div class="card-title" style="margin-bottom:16px;">Your plan</div>' +
-      '<div class="account-section">' +
-        '<div class="account-row"><div><div class="account-label">Current plan</div><div class="account-value"><span class="plan-badge">'+(planLabels[plan]||plan)+'</span></div></div>' +
-          (plan !== 'none' ? '<button class="btn-sm" onclick="location.href=\"/onboarding\"" style="display:inline-block;">Change plan</button>' : '<button class="btn-sm" onclick="location.href=\"/onboarding\"">Choose a plan</button>') +
-        '</div>' +
-        '<div class="account-row"><div class="account-label">Status</div><div class="account-value" style="color:'+(planStatus==='active'?'var(--green)':'var(--red)')+';">'+(planStatus==='active'?'Active':'Inactive')+'</div></div>' +
-        '<div class="account-row"><div class="account-label">Email</div><div class="account-value">'+(user.email||email)+'</div></div>' +
-        (plan !== 'none' && planStatus === 'active' ? '<div class="account-row"><div class="account-label">Cancel subscription</div><div><button class="btn-sm danger" onclick="cancelSub()">Cancel at period end</button></div></div>' : '') +
+    '<div class="dash-header"><div class="dash-title">Account</div></div>' +
+    '<div class="card" style="margin-bottom:16px;">' +
+      '<div class="card-title" style="margin-bottom:16px;">Your plan</div>' +
+      '<div class="account-row"><div><div class="account-label">Plan</div><div><span class="plan-badge">' + (planNames[plan]||plan) + '</span></div></div>' +
+        (plan==='none' ? '<a href="/onboarding" class="btn-sm">Choose plan</a>' : '<a href="/onboarding" class="btn-sm">Change</a>') +
       '</div>' +
+      '<div class="account-row"><div class="account-label">Status</div>' +
+        '<div style="color:'+(planStatus==='active'?'var(--green)':'var(--red)')+'">' + planStatus + '</div></div>' +
+      '<div class="account-row"><div class="account-label">Email</div><div class="account-value">' + (user.email||email) + '</div></div>' +
+      (plan!=='none'&&planStatus==='active' ? '<div class="account-row"><div class="account-label">Cancel</div><button class="btn-sm danger" onclick="cancelSub()">Cancel at period end</button></div>' : '') +
     '</div>' +
-    (restaurant ? '<div class="card"><div class="card-title" style="margin-bottom:16px;">Restaurant</div>' +
-      '<div class="account-section">' +
-        '<div class="account-row"><div class="account-label">Name</div><div class="account-value">'+restaurant.name+'</div></div>' +
-        '<div class="account-row"><div class="account-label">Postcode</div><div class="account-value">'+restaurant.postcode+'</div></div>' +
-        '<div class="account-row"><div class="account-label">Cuisine</div><div class="account-value">'+(restaurant.cuisine||'-')+'</div></div>' +
-        '<div class="account-row"><div class="account-label">Platforms</div><div class="account-value">'+restaurant.platforms+'</div></div>' +
-        '<div class="account-row"><div><div class="account-label">Update credentials</div><div style="font-size:12px;color:var(--muted);">Update your platform login details</div></div><a href="/onboarding" class="btn-sm">Update</a></div>' +
-      '</div></div>' : '');
+    (restaurant ? '<div class="card">' +
+      '<div class="card-title" style="margin-bottom:16px;">Restaurant</div>' +
+      '<div class="account-row"><div class="account-label">Name</div><div class="account-value">' + restaurant.name + '</div></div>' +
+      '<div class="account-row"><div class="account-label">Postcode</div><div class="account-value">' + (restaurant.postcode||'-') + '</div></div>' +
+      '<div class="account-row"><div class="account-label">Platforms</div><div class="account-value">' + (restaurant.platforms||'-') + '</div></div>' +
+      '<div class="account-row"><div class="account-label">Update credentials</div><a href="/onboarding" class="btn-sm">Update</a></div>' +
+    '</div>' : '');
 }
 
 async function cancelSub() {
   if (!confirm('Cancel your subscription? You will keep access until the end of your current billing period.')) return;
   var r = await fetch('/api/cancel-subscription',{method:'POST',headers:{'x-session-token':token}});
   var d = await r.json();
-  if (d.ok) alert('Subscription cancelled. You will keep access until the end of your current period.');
-  else alert(d.error || 'Could not cancel. Please contact us.');
+  alert(d.ok ? 'Subscription cancelled.' : (d.error||'Could not cancel.'));
 }
 
+async function sendMessage() {
+  var msg    = document.getElementById('contactMsg');
+  var status = document.getElementById('contactMsgStatus');
+  if (!msg||!msg.value.trim()) return;
+  status.style.display='block'; status.style.color='var(--muted)'; status.textContent='Sending...';
+  try {
+    var r = await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json','x-session-token':token},body:JSON.stringify({message:msg.value.trim()})});
+    var d = await r.json();
+    if (d.ok) { status.style.color='var(--green)'; status.textContent='Message sent. We will get back to you soon.'; msg.value=''; }
+    else throw new Error(d.error);
+  } catch(e) { status.style.color='var(--red)'; status.textContent='Could not send. Please email us directly.'; }
+}
 
-  // Build trend chart
+// ── Load data ─────────────────────────────────────────────────────────────────
+fetch('/api/dashboard', {headers:{'x-session-token':token}})
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (!d.ok) { logout(); return; }
+    dashData = d;
+    fetch('/api/me',{headers:{'x-session-token':token}}).then(function(r){return r.json();}).then(function(me){
+      dashData.user = me;
+      document.getElementById('loadingState').style.display = 'none';
+      buildReportView(dashData);
+      buildAccountView(dashData);
+      showView('report');
+    });
+  })
+  .catch(function(){ logout(); });
+</script>
+</body>
+</html
+  // ── Trend chart ──────────────────────────────────────────────────────────
   function buildTrendChart(history, metric) {
-    if (!history || !history.length) return '';
-    if (history.length === 1) {
-      return '<div class="trend-chart-wrap"><div class="trend-chart-title">Performance trend</div>' +
-        '<div style="font-size:13px;color:var(--muted);padding:20px 0;">Chart will show trends as more weekly data is added. Come back next week to see your first trend.</div></div>';
-    }
+    if (!history || history.length < 2) return '';
     var data = history.slice(0,12).reverse();
     var vals = data.map(function(w){ return Number(w[metric]||0); });
     var maxV = Math.max.apply(null, vals) || 1;
     var tabs = ['orders','revenue','aov','rating'];
     var tabLabels = {orders:'Orders',revenue:'Revenue',aov:'Avg order',rating:'Rating'};
     var tabsHtml = tabs.map(function(t){
-      return '<button class="trend-tab'+(t===metric?' active':'')+'" onclick="reloadChart(this,\''+t+'\')">'+tabLabels[t]+'</button>';
+      return '<button class="trend-tab'+(t===metric?' active':'')+'" onclick="switchChart(this,''+t+'')">' + tabLabels[t] + '</button>';
     }).join('');
-    var barsHtml = data.map(function(w,i){
-      var v = Number(w[metric]||0);
-      var h = Math.max(6, Math.round(v/maxV*100));
-      var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-      return '<div class="chart-bar-wrap"><div class="chart-val">'+(metric==='revenue'?'\u00a3':'')+fmt(v)+'</div><div class="chart-bar" style="height:'+h+'%"></div><div class="chart-label">'+lbl+'</div></div>';
-    }).join('');
+    var barsHtml = chartBars(data, metric, maxV);
     return '<div class="trend-chart-wrap" id="trendChart">' +
       '<div class="trend-chart-title">Performance trend</div>' +
-      '<div class="trend-chart-sub">Last '+data.length+' weeks</div>' +
-      '<div class="trend-tabs" id="trendTabs">'+tabsHtml+'</div>' +
-      '<div class="chart-bars" id="chartBars">'+barsHtml+'</div>' +
+      '<div class="trend-tabs" id="trendTabs">' + tabsHtml + '</div>' +
+      '<div class="chart-bars" id="chartBars">' + barsHtml + '</div>' +
     '</div>';
   }
 
-  function reloadChart(btn, metric) {
+  function chartBars(data, metric, maxV) {
+    if (!maxV) maxV = 1;
+    return data.map(function(w){
+      var v   = Number(w[metric]||0);
+      var h   = Math.max(4, Math.round(v/maxV*100));
+      var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      var disp = metric==='revenue'||metric==='aov' ? '£'+Number(v).toFixed(0) : String(v);
+      return '<div class="chart-bar-wrap">' +
+        '<div class="chart-val">'+disp+'</div>' +
+        '<div class="chart-bar" style="height:'+h+'%"></div>' +
+        '<div class="chart-label">'+lbl+'</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function switchChart(btn, metric) {
     document.querySelectorAll('.trend-tab').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
     var bars = document.getElementById('chartBars');
     if (!bars || !dashData) return;
-    var history = dashData.history || [];
-    var data = history.slice(0,12).reverse();
+    var data = (dashData.history||[]).slice(0,12).reverse();
     var vals = data.map(function(w){ return Number(w[metric]||0); });
-    var maxV = Math.max.apply(null, vals) || 1;
-    bars.innerHTML = data.map(function(w){
-      var v = Number(w[metric]||0);
-      var h = Math.max(6, Math.round(v/maxV*100));
-      var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-      return '<div class="chart-bar-wrap"><div class="chart-val">'+(metric==='revenue'?'\u00a3':'')+fmt(v)+'</div><div class="chart-bar" style="height:'+h+'%"></div><div class="chart-label">'+lbl+'</div></div>';
-    }).join('');
+    var maxV = Math.max.apply(null,vals)||1;
+    bars.innerHTML = chartBars(data, metric, maxV);
   }
 
-  // Build ticked checklist
-  function buildChecklist(thisWeek, longerTerm, weekEnding, plan) {
-    var key = 'piq_checks_' + weekEnding;
+  // ── Checklist ─────────────────────────────────────────────────────────────
+  function renderChecklist(containerId, thisWeek, longerTerm, weekEnding, plan) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var key = 'piq_chk_' + String(weekEnding).replace(/[^a-zA-Z0-9]/g,'_');
     var saved = {};
     try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
-    var isSelfServe = (plan === 'starter' || !plan);
-    var heading = isSelfServe ? 'Your action checklist' : 'What we are working on for you';
-    var subText  = isSelfServe
-      ? 'Tick off as you complete each action this week'
-      : 'Our team is handling these — we will update you when done';
-
-    function checkItem(text, tag, tagCls) {
-      var id = 'chk' + text.replace(/[^a-zA-Z0-9]/g,'').slice(0,18);
-      var done = !!saved[id];
-      var el = '<div class="checklist-item' + (done ? ' done' : '') + '" ';
-      el += 'id="' + id + '" ';
-      el += 'data-wkey="' + key + '" ';
-      if (isSelfServe) el += 'onclick="toggleCheck(this)" ';
-      el += '>';
-      el += '<div class="check-box">' + (done ? '&#10003;' : '') + '</div>';
-      el += '<div class="check-text">' + text + '</div>';
-      el += '<span class="check-tag ' + tagCls + '">' + tag + '</span>';
-      el += '</div>';
-      return el;
+    var isSelf = (!plan || plan === 'starter');
+    var html = '';
+    if (!thisWeek.length && !longerTerm.length) {
+      container.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">No actions yet for this week.</div>';
+      return;
     }
-
-    var html = '<div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;">' + heading + '</div>';
-    html += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">' + subText + '</div>';
-
+    function item(text, tag, tagCls) {
+      var id = 'c' + text.replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+      var done = !!saved[id];
+      return '<div class="checklist-item' + (done?' done':'') + '" id="'+id+'" data-key="'+key+'"' +
+        (isSelf ? ' onclick="tickItem(this)"' : '') + '>' +
+        '<div class="check-box">' + (done?'&#10003;':'') + '</div>' +
+        '<div class="check-text">' + text + '</div>' +
+        '<span class="check-tag '+tagCls+'">'+tag+'</span>' +
+      '</div>';
+    }
     if (thisWeek.length) {
-      html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">This week</div>';
-      html += thisWeek.map(function(a){ return checkItem(a, isSelfServe ? 'Do this' : 'In progress', 'tag-now'); }).join('');
+      html += '<div class="checklist-section-label">This week</div>';
+      html += thisWeek.map(function(a){ return item(a, isSelf?'To do':'In progress', 'tag-now'); }).join('');
     }
     if (longerTerm.length) {
-      html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">Coming up</div>';
-      html += longerTerm.map(function(a){ return checkItem(a, '2-4 weeks', 'tag-week'); }).join('');
+      html += '<div class="checklist-section-label" style="margin-top:10px;">Coming up</div>';
+      html += longerTerm.map(function(a){ return item(a,'Soon','tag-week'); }).join('');
     }
-    return html;
+    container.innerHTML = html;
   }
 
-function toggleCheck(el) {
-    var key = el.getAttribute('data-wkey');
-    if (!key) return;
-    el.classList.toggle('done');
-    var id = el.id;
+  function tickItem(el) {
+    var key  = el.getAttribute('data-key');
+    var id   = el.id;
+    var done = !el.classList.contains('done');
+    el.classList.toggle('done', done);
+    el.querySelector('.check-box').innerHTML = done ? '&#10003;' : '';
     var saved = {};
     try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
-    if (el.classList.contains('done')) {
-      saved[id] = true;
-      el.querySelector('.check-box').innerHTML = '&#10003;';
-    } else {
-      delete saved[id];
-      el.querySelector('.check-box').innerHTML = '';
-    }
+    if (done) saved[id] = 1; else delete saved[id];
     try { localStorage.setItem(key, JSON.stringify(saved)); } catch(e){}
   }
 
-
-  async function sendMessage() {
-    var msg = document.getElementById('contactMsg');
-    var status = document.getElementById('contactMsgStatus');
-    if (!msg || !msg.value.trim()) return;
-    status.style.display = 'block';
-    status.style.color = 'var(--muted)';
-    status.textContent = 'Sending...';
-    try {
-      var res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-session-token': token },
-        body: JSON.stringify({ message: msg.value.trim() })
-      });
-      var d = await res.json();
-      if (d.ok) {
-        status.style.color = 'var(--green)';
-        status.textContent = 'Message sent. We will get back to you soon.';
-        msg.value = '';
-      } else throw new Error(d.error);
-    } catch(e) {
-      status.style.color = 'var(--red)';
-      status.textContent = 'Could not send. Please email us directly.';
-    }
-  }
-
-// Load dashboard
-fetch('/api/dashboard', {headers:{'x-session-token':token}})
-  .then(function(r){return r.json();})
-  .then(function(d) {
-    if (!d.ok) { logout(); return; }
-    dashData = d;
-    // Also get user info for account view
-    return fetch('/api/me',{headers:{'x-session-token':token}}).then(function(r){return r.json();}).then(function(me){
-      dashData.user = me;
-      document.getElementById('loadingState').style.display='none';
-      buildReportView(dashData);
-      buildAccountView(dashData);
-      showView('report');
-    });
-  })
-  .catch(function(e){console.error(e);logout();});
-</script>
-</body>
-</html>
+>
