@@ -351,7 +351,8 @@ async function generateReport() {
     });
     var d = await res.json();
     msg.className = 'msg ' + (d.ok ? 'ok' : 'err');
-    msg.textContent = d.ok ? 'Report generated and client emailed.' : (d.error||'Error generating report.');
+    msg.textContent = d.ok ? 'Report generated.' + (d.emailed ? ' Client emailed.' : ' (Email not configured — check SMTP vars.)') : (d.error||'Error generating report.');
+    if (d.ok) loadClients();
     msg.style.display = 'block';
   } catch(e) {
     msg.className = 'msg err'; msg.textContent = e.message; msg.style.display = 'block';
