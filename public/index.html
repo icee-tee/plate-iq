@@ -1,297 +1,759 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PlateIQ — Restaurant Delivery Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#1a1a1a;--ink-s:#3d3d3d;--muted:#6b6b6b;--muted-l:#a0a0a0;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-d:#c47f0a;--amber-p:#fef3dc;--red:#dc2626;--green:#16a34a;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--r-lg:18px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
+  :root {
+    --ink:    #1a1a1a;
+    --ink-s:  #3d3d3d;
+    --muted:  #6b6b6b;
+    --muted-l:#a0a0a0;
+    --bg:     #faf8f4;
+    --card:   #ffffff;
+    --amber:  #e8a020;
+    --amber-p:#fef3dc;
+    --border: rgba(26,26,26,.1);
+    --border-m:rgba(26,26,26,.16);
+    --r:      12px;
+    --r-lg:   20px;
+    --font-d: 'DM Serif Display', Georgia, serif;
+    --font-b: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font-b); background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.6; }
+
+  /* ── Nav ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px; height: 64px;
+    background: rgba(250,248,244,.96); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-brand { font-family: var(--font-d); font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -.03em; }
+  .nav-brand span { color: var(--amber); }
+  .nav-cta { font-family: var(--font-b); font-size: 13px; font-weight: 600; background: var(--ink); color: #fff; border: none; border-radius: 99px; padding: 8px 18px; cursor: pointer; transition: background .15s; }
+  .nav-cta:hover { background: #333; }
+
+  /* ── Hero ── */
+  .hero {
+    width: 100%; padding: 88px 48px 64px;
+    text-align: center; background: var(--bg);
+  }
+  .hero-inner { max-width: 720px; margin: 0 auto; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--amber); background: var(--amber-p);
+    border: 1px solid rgba(232,160,32,.25);
+    padding: 5px 14px; border-radius: 99px; margin-bottom: 24px;
+  }
+  .hero-eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+  .hero h1 {
+    font-family: var(--font-d); font-size: clamp(28px, 8vw, 64px);
+    font-weight: 800; line-height: 1.1; letter-spacing: -.03em;
+    color: var(--ink); margin-bottom: 16px;
+  }
+  .hero h1 em { font-style: normal; color: var(--amber); }
+  .hero-sub { font-size: clamp(15px, 2vw, 18px); color: var(--muted); max-width: 520px; margin: 0 auto 40px; line-height: 1.65; }
+
+  /* ── Form card ── */
+  .form-card {
+    max-width: 600px; margin: 0 auto 80px;
+    background: var(--card); border: 1px solid var(--border-m);
+    border-radius: var(--r-lg); padding: 28px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.06);
+  }
+  .form-step-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+  }
+  .form-step-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* Platform pills */
+  .platform-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+  .platform-pill {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--font-b); font-size: 13px; font-weight: 500;
+    padding: 9px 10px; border-radius: 99px;
+    border: 2px solid var(--border-m); background: var(--bg);
+    color: var(--ink-s); cursor: pointer;
+    transition: border-color .12s, background .12s;
+    user-select: none;
+  }
+  .platform-pill:hover { border-color: var(--amber); }
+  .platform-pill.active { border-color: var(--amber); background: var(--amber-p); color: var(--ink); }
+  .platform-pill .pill-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Form fields */
+  .f-group { margin-bottom: 14px; }
+  .f-group label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 5px; }
+  .f-group input, .f-group select {
+    font-family: var(--font-b); font-size: 14.5px; color: var(--ink);
+    background: var(--bg); border: 1.5px solid var(--border-m);
+    border-radius: var(--r); padding: 12px 16px; outline: none;
+    width: 100%; transition: border-color .15s, box-shadow .15s;
+  }
+  .f-group input:focus, .f-group select:focus {
+    border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,160,32,.12);
+    background: #fff;
+  }
+  .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media(max-width:480px){ .f-row { grid-template-columns: 1fr; } }
+
+  .f-divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  .btn-primary {
+    width: 100%; font-family: var(--font-d); font-size: 15px; font-weight: 700;
+    background: var(--ink); color: #fff; border: none;
+    border-radius: var(--r); padding: 15px; cursor: pointer;
+    transition: background .15s, transform .1s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    letter-spacing: -.01em;
+  }
+  .btn-primary:hover { background: #2a2a2a; }
+  .btn-primary:active { transform: scale(.99); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .form-note { font-size: 12px; color: var(--muted-l); text-align: center; margin-top: 10px; }
+
+  /* ── Loading ── */
+  .loading-screen { text-align: center; padding: 80px 24px; max-width: 480px; margin: 0 auto; }
+  .loading-steps { display: flex; flex-direction: column; gap: 16px; margin: 36px auto; text-align: left; max-width: 360px; }
+  .loading-step { display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--muted); transition: color .3s; line-height: 1.4; }
+  .loading-step.active { color: var(--ink); font-weight: 500; }
+  .loading-step.done { color: var(--amber); }
+  .step-icon { width: 28px; height: 28px; border-radius: 50%; background: var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--muted); transition: background .3s, color .3s; }
+  .loading-step.active .step-icon { background: var(--amber); color: var(--ink); animation: pulse 1s ease-in-out infinite; }
+  .loading-step.done .step-icon { background: var(--green); color: #fff; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+  /* ── Results ── */
+  #resultsSection { max-width: 700px; margin: 0 auto; padding: 0 24px 80px; display: none; }
+
+  /* Score circle */
+  .score-hero { text-align: center; padding: 40px 0 36px; }
+  .score-circle {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: conic-gradient(var(--amber) 0%, var(--amber) var(--pct, 0%), #eee var(--pct, 0%));
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px; position: relative;
+    box-shadow: 0 0 0 8px var(--amber-p);
+    transition: --pct 1s;
+  }
+  .score-inner { width: 108px; height: 108px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .score-num { font-family: var(--font-d); font-size: 38px; font-weight: 800; color: var(--ink); letter-spacing: -.04em; line-height: 1; }
+  .score-denom { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .score-label { font-family: var(--font-d); font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+  .score-sub { font-size: 14px; color: var(--muted); }
+
+  /* Restaurant header */
+  .resto-header {
+    background: var(--card); border: 1px solid var(--border-m); border-radius: var(--r-lg);
+    padding: 20px 24px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .resto-icon { width: 52px; height: 52px; border-radius: var(--r); background: var(--amber-p); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .resto-name { font-family: var(--font-d); font-size: 18px; font-weight: 700; color: var(--ink); }
+  .resto-meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .resto-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+  .badge-amber { background: var(--amber-p); color: var(--amber); }
+  .badge-dark { background: var(--ink); color: #fff; }
+  .badge-muted { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+  /* Insight cards */
+  .insights-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .insights-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .insight-card {
+    background: var(--card); border: 1px solid var(--border-m);
+    border-radius: var(--r-lg); padding: 20px 22px; margin-bottom: 12px;
+    border-left: 4px solid var(--amber);
+    animation: slideIn .4s ease forwards;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .insight-card:nth-child(2) { animation-delay: .1s; }
+  .insight-card:nth-child(3) { animation-delay: .2s; }
+  .insight-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+  .insight-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .insight-headline { font-family: var(--font-d); font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .insight-body { font-size: 13.5px; color: var(--ink-s); line-height: 1.6; }
+  .insight-impact { font-size: 11.5px; font-weight: 600; color: var(--amber); margin-top: 8px; background: var(--amber-p); padding: 4px 10px; border-radius: 99px; display: inline-block; }
+
+  /* Locked section */
+  .locked-section {
+    background: var(--card); border: 1px solid var(--border-m);
+    border-radius: var(--r-lg); padding: 28px 24px; margin: 24px 0;
+    position: relative; overflow: hidden;
+  }
+  .locked-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .lock-icon { font-size: 18px; }
+  .locked-title { font-family: var(--font-d); font-size: 16px; font-weight: 700; color: var(--ink); }
+  .locked-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .locked-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .locked-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 12px 16px;
+    filter: blur(2px); user-select: none; pointer-events: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .locked-card-title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .locked-card-sub { font-size: 12px; color: var(--muted); }
+  .btn-unlock {
+    width: 100%; font-family: var(--font-d); font-size: 15px; font-weight: 700;
+    background: var(--amber); color: var(--ink); border: none;
+    border-radius: var(--r); padding: 14px; cursor: pointer;
+    transition: background .15s; letter-spacing: -.01em;
+  }
+  .btn-unlock:hover { background: #d4911a; }
+
+  /* ── Pricing ── */
+  #pricingSection { background: var(--ink); padding: 72px 24px; }
+  .pricing-wrap { max-width: 900px; margin: 0 auto; }
+  .pricing-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); text-align: center; margin-bottom: 12px; }
+  .pricing-title { font-family: var(--font-d); font-size: clamp(28px,4vw,44px); font-weight: 800; color: #fff; text-align: center; margin-bottom: 8px; letter-spacing: -.02em; }
+  .pricing-sub { font-size: 15px; color: rgba(255,255,255,.5); text-align: center; margin-bottom: 48px; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  @media(max-width:700px){ .pricing-grid { grid-template-columns: 1fr; } }
+  .pricing-card {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--r-lg); padding: 28px 24px;
+  }
+  .pricing-card.featured { background: var(--amber); border-color: var(--amber); }
+  .pricing-tier { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 12px; }
+  .pricing-card.featured .pricing-tier { color: rgba(26,26,26,.6); }
+  .pricing-price { font-family: var(--font-d); font-size: 36px; font-weight: 800; color: #fff; letter-spacing: -.03em; line-height: 1; margin-bottom: 4px; }
+  .pricing-card.featured .pricing-price { color: var(--ink); }
+  .pricing-period { font-size: 12px; color: rgba(255,255,255,.4); margin-bottom: 20px; }
+  .pricing-card.featured .pricing-period { color: rgba(26,26,26,.5); }
+  .pricing-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+  .pricing-list li { font-size: 13.5px; color: rgba(255,255,255,.75); display: flex; align-items: flex-start; gap: 8px; }
+  .pricing-card.featured .pricing-list li { color: var(--ink-s); }
+  .pricing-list li::before { content: '✓'; font-weight: 700; color: var(--amber); flex-shrink: 0; margin-top: 1px; }
+  .pricing-card.featured .pricing-list li::before { color: var(--ink); }
+  .btn-pricing {
+    width: 100%; font-family: var(--font-d); font-size: 13.5px; font-weight: 700;
+    border-radius: var(--r); padding: 12px; cursor: pointer;
+    border: 1.5px solid rgba(255,255,255,.2); background: transparent; color: #fff;
+    transition: background .15s, border-color .15s;
+  }
+  .btn-pricing:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.4); }
+  .pricing-card.featured .btn-pricing { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .pricing-card.featured .btn-pricing:hover { background: #333; }
+
+  /* ── How it works ── */
+  #howSection { max-width: 800px; margin: 0 auto; padding: 72px 24px; }
+  .how-title { font-family: var(--font-d); font-size: clamp(26px,4vw,40px); font-weight: 800; color: var(--ink); text-align: center; margin-bottom: 48px; letter-spacing: -.02em; }
+  .how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+  @media(max-width:600px){ .how-grid { grid-template-columns: 1fr; } }
+  .how-card { text-align: center; }
+  .how-num { font-family: var(--font-d); font-size: 48px; font-weight: 800; color: var(--amber-p); letter-spacing: -.04em; line-height: 1; margin-bottom: 12px; }
+  .how-label { font-family: var(--font-d); font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .how-desc { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+  /* ── Footer ── */
+  footer { border-top: 1px solid var(--border); padding: 24px; text-align: center; font-size: 12px; color: var(--muted-l); }
+  footer a { color: var(--muted); text-decoration: none; }
+
+
+  /* ── Preview section ── */
+  #previewSection { max-width: 900px; margin: 0 auto; padding: 72px 24px; }
+  .preview-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); text-align: center; margin-bottom: 12px; }
+  .preview-title { font-family: var(--font-d); font-size: clamp(26px,4vw,40px); font-weight: 800; color: var(--ink); text-align: center; margin-bottom: 8px; letter-spacing: -.02em; }
+  .preview-sub { font-size: 15px; color: var(--muted); text-align: center; margin-bottom: 48px; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+  /* Animated report cards */
+  .report-cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 56px; }
+  @media(max-width:600px){ .report-cards-grid { grid-template-columns: 1fr; } }
+
+  .report-card-preview {
+    background: var(--card); border: 1px solid var(--border-m);
+    border-radius: var(--r-lg); padding: 20px;
+    opacity: 0; transform: translateY(16px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .report-card-preview.visible { opacity: 1; transform: translateY(0); }
+  .rcp-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-l); margin-bottom: 12px; }
+  .rcp-score-row { display: flex; align-items: center; gap: 14px; }
+  .rcp-mini-circle { width: 56px; height: 56px; border-radius: 50%; background: conic-gradient(var(--amber) 71%, #eee 71%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rcp-mini-inner { width: 42px; height: 42px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-d); font-size: 14px; font-weight: 800; color: var(--ink); }
+  .rcp-score-detail { flex: 1; }
+  .rcp-score-title { font-family: var(--font-d); font-size: 15px; font-weight: 700; color: var(--ink); }
+  .rcp-score-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .rcp-bars { display: flex; flex-direction: column; gap: 8px; }
+  .rcp-bar-row { display: flex; align-items: center; gap: 10px; }
+  .rcp-bar-label { font-size: 12px; color: var(--ink-s); width: 100px; flex-shrink: 0; }
+  .rcp-bar-track { flex: 1; height: 6px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+  .rcp-bar-fill { height: 100%; border-radius: 99px; background: var(--amber); width: 0; transition: width 1.2s ease; }
+  .rcp-bar-val { font-size: 11.5px; font-weight: 600; color: var(--ink); width: 28px; text-align: right; }
+  .rcp-priorities { display: flex; flex-direction: column; gap: 6px; }
+  .rcp-priority { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-s); padding: 8px 12px; background: var(--bg); border-radius: var(--r); }
+  .rcp-priority::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); flex-shrink: 0; }
+  .rcp-checklist { display: flex; flex-direction: column; gap: 6px; }
+  .rcp-check-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-s); }
+  .rcp-check-box { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; }
+  .rcp-check-done { background: var(--amber); }
+  .rcp-check-todo { background: var(--border-m); }
+  .rcp-locked-overlay { position: relative; }
+  .rcp-locked-overlay::after { content: '🔒 Paid plan'; position: absolute; inset: 0; background: rgba(250,248,244,.85); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--muted); border-radius: var(--r); }
+
+  /* Before / After */
+  .before-after { background: var(--ink); border-radius: var(--r-lg); overflow: hidden; }
+  .ba-header { display: grid; grid-template-columns: 1fr 1fr; }
+  .ba-col-head { padding: 16px 20px; font-family: var(--font-d); font-size: 13px; font-weight: 700; letter-spacing: .04em; }
+  .ba-col-head.before { background: rgba(255,255,255,.06); color: rgba(255,255,255,.5); }
+  .ba-col-head.after { background: var(--amber); color: var(--ink); }
+  .ba-rows { display: flex; flex-direction: column; }
+  .ba-row { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid rgba(255,255,255,.08); }
+  .ba-cell { padding: 14px 20px; font-size: 13.5px; }
+  .ba-cell.before-cell { color: rgba(255,255,255,.45); display: flex; align-items: center; gap: 8px; }
+  .ba-cell.after-cell { color: #fff; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .ba-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.25); padding: 10px 20px 4px; }
+  .ba-pill-bad { background: rgba(220,38,38,.2); color: #f87171; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+  .ba-pill-good { background: rgba(232,160,32,.2); color: var(--amber); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+
+  .excl-btn {
+    font-family: var(--font-b); font-size: 12.5px; font-weight: 600;
+    padding: 7px 14px; border-radius: 99px;
+    border: 1.5px solid var(--border-m); background: var(--card); color: var(--muted);
+    cursor: pointer; transition: all .12s;
+  }
+  .excl-btn.active { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+
+  
+:root {
+  --ink:#1a1a1a; --ink-s:#3d3d3d; --muted:#6b6b6b; --muted-l:#a0a0a0;
+  --bg:#faf8f4; --card:#ffffff;
+  --amber:#e8a020; --amber-d:#c47f0a; --amber-p:#fef3dc;
+  --red:#dc2626; --red-p:#fef2f2; --green:#16a34a; --green-p:#f0fdf4;
+  --border:rgba(26,26,26,.1); --border-m:rgba(26,26,26,.16);
+  --r:10px; --r-lg:18px;
+  --serif:"DM Serif Display",Georgia,serif;
+  --sans:"Plus Jakarta Sans",system-ui,sans-serif;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6;}
-nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:64px;background:rgba(250,248,244,.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
-.brand{font-family:var(--serif);font-size:20px;color:var(--ink);}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;}
+.report{max-width:860px;margin:0 auto;padding:0 0 80px;}
+
+/* Cover */
+.cover{background:var(--ink);padding:40px 48px 36px;position:relative;overflow:hidden;}
+.cover::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--amber);}
+.cover-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;}
+.brand{font-size:14px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.04em;}
 .brand span{color:var(--amber);}
-.nav-cta{font-size:13px;font-weight:700;background:var(--ink);color:#fff;border:none;border-radius:99px;padding:8px 20px;cursor:pointer;font-family:var(--sans);}
-.hero{width:100%;padding:88px 48px 64px;text-align:center;}
-.hero-inner{max-width:720px;margin:0 auto;}
-.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);background:var(--amber-p);border:1px solid rgba(232,160,32,.25);padding:5px 14px;border-radius:99px;margin-bottom:24px;}
-.eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--amber);}
-h1{font-family:var(--serif);font-size:clamp(28px,6vw,64px);line-height:1.1;letter-spacing:-.02em;color:var(--ink);margin-bottom:20px;}
-h1 em{font-style:italic;color:var(--amber);}
-.hero-sub{font-size:clamp(15px,2vw,18px);color:var(--muted);max-width:520px;margin:0 auto 40px;line-height:1.65;}
-.form-card{max-width:600px;margin:0 auto 80px;background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:28px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
-.step-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.step-label::after{content:"";flex:1;height:1px;background:var(--border);}
-.platform-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
-.platform-pill{display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:13px;font-weight:500;padding:9px 10px;border-radius:99px;border:2px solid var(--border-m);background:var(--bg);color:var(--ink-s);cursor:pointer;transition:all .12s;width:100%;}
-.platform-pill.active{border-color:var(--amber);background:var(--amber-p);color:var(--ink);}
-.pill-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.excl-row{margin-bottom:20px;padding:14px 16px;background:var(--bg);border-radius:var(--r);border:1.5px solid var(--border);}
-.excl-btns{display:flex;gap:8px;margin-top:10px;}
-.excl-btn{flex:1;font-family:var(--sans);font-size:12.5px;font-weight:600;padding:8px;border-radius:99px;border:1.5px solid var(--border-m);background:var(--card);color:var(--muted);cursor:pointer;transition:all .12s;text-align:center;}
-.excl-btn.active{background:var(--amber);border-color:var(--amber);color:var(--ink);}
-.f-group{margin-bottom:14px;}
-.f-group label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;}
-.f-group input,.f-group select{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r);padding:12px 16px;outline:none;width:100%;transition:border-color .15s;}
-.f-group input:focus,.f-group select:focus{border-color:var(--amber);background:#fff;}
-.f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.f-divider{height:1px;background:var(--border);margin:20px 0;}
-.btn-primary{width:100%;font-family:var(--serif);font-size:16px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
-.btn-primary:hover{background:#2a2a2a;}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
-.spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.form-note{font-size:12px;color:var(--muted-l);text-align:center;margin-top:10px;}
-.form-error{font-size:13px;color:#dc2626;margin-top:8px;display:none;text-align:center;}
-.how{max-width:900px;margin:0 auto;padding:72px 48px;}
-.how h2{font-family:var(--serif);font-size:clamp(26px,4vw,40px);color:var(--ink);text-align:center;margin-bottom:48px;}
-.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;}
-.how-num{font-family:var(--serif);font-size:48px;color:var(--amber-p);line-height:1;margin-bottom:12px;}
-.how-lbl{font-family:var(--serif);font-size:16px;color:var(--ink);margin-bottom:8px;}
-.how-desc{font-size:13.5px;color:var(--muted);line-height:1.6;}
-.pricing-section{background:var(--ink);padding:72px 48px;}
-.pricing-inner{max-width:960px;margin:0 auto;}
-.pricing-section h2{font-family:var(--serif);font-size:clamp(28px,4vw,44px);color:#fff;text-align:center;margin-bottom:8px;}
-.pricing-section p{color:rgba(255,255,255,.5);text-align:center;margin-bottom:48px;}
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
-.p-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-lg);padding:28px 24px;}
-.p-card.featured{background:var(--amber);border-color:var(--amber);}
-.p-tier{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:12px;}
-.p-card.featured .p-tier{color:rgba(26,26,26,.6);}
-.p-price{font-family:var(--serif);font-size:36px;color:#fff;line-height:1;margin-bottom:4px;}
-.p-card.featured .p-price{color:var(--ink);}
-.p-period{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:20px;}
-.p-card.featured .p-period{color:rgba(26,26,26,.5);}
-.p-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
-.p-list li{font-size:13.5px;color:rgba(255,255,255,.75);display:flex;align-items:flex-start;gap:8px;}
-.p-card.featured .p-list li{color:var(--ink-s);}
-.p-list li::before{content:"✓";font-weight:700;color:var(--amber);flex-shrink:0;}
-.p-card.featured .p-list li::before{color:var(--ink);}
-.p-btn{width:100%;font-family:var(--sans);font-size:13.5px;font-weight:700;border-radius:var(--r);padding:12px;cursor:pointer;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:#fff;transition:background .15s;}
-.p-btn:hover{background:rgba(255,255,255,.1);}
-.p-card.featured .p-btn{background:var(--ink);border-color:var(--ink);}
-.p-card.featured .p-btn:hover{background:#333;}
+.report-date{font-size:12px;color:rgba(255,255,255,.3);text-align:right;}
+.cover-main{display:grid;grid-template-columns:1fr auto;gap:32px;align-items:end;}
+.resto-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px;}
+.resto-name{font-family:var(--serif);font-size:clamp(32px,5vw,48px);color:#fff;line-height:1.1;margin-bottom:6px;}
+.resto-meta{font-size:13.5px;color:rgba(255,255,255,.5);}
+.cover-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;}
+.cover-tag{font-size:11px;font-weight:600;padding:4px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.55);}
+.cover-tag.amber{border-color:rgba(232,160,32,.4);color:var(--amber);background:rgba(232,160,32,.08);}
+.score-ring{text-align:center;flex-shrink:0;}
+.ring-svg{width:120px;height:120px;}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.1);stroke-width:8;}
+.ring-fill{fill:none;stroke:var(--amber);stroke-width:8;stroke-linecap:round;stroke-dasharray:314;stroke-dashoffset:91;transform:rotate(-90deg);transform-origin:60px 60px;}
+.ring-num{font-family:var(--serif);font-size:28px;fill:#fff;text-anchor:middle;dominant-baseline:middle;}
+.ring-denom{font-size:11px;fill:rgba(255,255,255,.4);text-anchor:middle;}
+.ring-label{font-size:11px;font-weight:700;color:var(--amber);margin-top:6px;letter-spacing:.06em;}
 
-.loading-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(250,248,244,.92);backdrop-filter:blur(10px);}
-.loading-card{background:#fff;border:1px solid var(--border-m);border-radius:20px;padding:40px 44px;max-width:420px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.12);}
-.loading-title{font-family:var(--serif);font-size:24px;color:var(--ink);margin-bottom:4px;}
-.loading-sub{font-size:13.5px;color:var(--muted);margin-bottom:28px;}
-.l-step{display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--muted);margin-bottom:14px;font-weight:500;transition:color .3s;}
-.l-step.active{color:var(--ink);}
-.l-step.done{color:#16a34a;}
-.l-icon{width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0;transition:all .3s;}
-.l-step.active .l-icon{background:var(--amber);color:var(--ink);}
-.l-step.done .l-icon{background:#16a34a;color:#fff;}
-.progress-bar{margin-top:24px;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
-.progress-fill{height:100%;background:var(--amber);border-radius:99px;width:0%;transition:width .6s ease;}
-footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-size:12px;color:var(--muted-l);}
+/* Sections */
+.section{padding:32px 48px;border-bottom:1px solid var(--border);}
+.section:last-child{border-bottom:none;}
+.section-eyebrow{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:8px;}
+.section-title{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:20px;}
 
-    nav{padding:0 16px;}
-    .nav-cta{padding:7px 14px;font-size:12px;}
-    .hero{padding:40px 16px 32px;}
-    .hero-inner{max-width:100%;}
-    h1{font-size:32px !important;line-height:1.1;}
-    .hero-sub{font-size:14px;margin-bottom:28px;}
-    .eyebrow{font-size:10px;}
-    .form-card{margin:0 0 48px;padding:20px 16px;border-radius:12px;}
-    .step-label{font-size:9px;}
-    .platform-pill{font-size:12px;padding:8px 6px;}
-    .pill-dot{width:8px;height:8px;}
-    .excl-btn{font-size:11.5px;padding:7px 6px;}
-    section[style*="padding:0 24px"]{padding:0 16px 40px !important;}
-    .how{padding:48px 16px;}
-    .pricing-section{padding:48px 16px;}
-    .pricing-inner{padding:0;}
-    /* What's inside section */
-    section[style*="padding:72px 48px;max-width:960px"]{padding:48px 16px !important;max-width:100% !important;}
-    /* Report cards 1 col on mobile */
-    [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
-    /* Before/after table */
-    [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
-  }
-  @media(max-width:480px){
-    h1{font-size:28px !important;}
-    .metric-grid{grid-template-columns:1fr 1fr;}
-    .platform-grid{gap:6px;}
+/* Score grid */
+.score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.score-cell{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r);padding:16px 14px;text-align:center;}
+.score-cell-num{font-family:var(--serif);font-size:28px;line-height:1;}
+.score-cell-label{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.3;}
+.score-cell-bar{height:3px;border-radius:99px;background:var(--border);margin-top:10px;overflow:hidden;}
+.score-cell-fill{height:100%;border-radius:99px;}
+
+/* Alert cards */
+.alert-grid{display:flex;flex-direction:column;gap:10px;}
+.alert-card{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;border-radius:var(--r);border-left:3px solid;}
+.alert-card.critical{background:var(--red-p);border-color:var(--red);}
+.alert-card.warning{background:var(--amber-p);border-color:var(--amber);}
+.alert-card.positive{background:var(--green-p);border-color:var(--green);}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.alert-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.alert-body{font-size:13px;color:var(--ink-s);line-height:1.55;}
+.alert-impact{display:inline-block;font-size:11px;font-weight:700;margin-top:6px;padding:2px 10px;border-radius:99px;}
+.alert-card.critical .alert-impact{background:rgba(220,38,38,.12);color:var(--red);}
+.alert-card.warning .alert-impact{background:rgba(232,160,32,.15);color:var(--amber-d);}
+.alert-card.positive .alert-impact{background:rgba(22,163,74,.12);color:var(--green);}
+
+/* Photo audit */
+.photo-audit{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);overflow:hidden;}
+.photo-header{display:grid;grid-template-columns:1fr auto;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);}
+.photo-title{font-size:14px;font-weight:700;color:var(--ink);}
+.photo-score{font-family:var(--serif);font-size:24px;color:var(--red);}
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);}
+.photo-item{padding:12px 14px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);}
+.photo-item:nth-child(4n){border-right:none;}
+.photo-item-name{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.photo-item-status{font-size:11px;font-weight:600;}
+.has{color:var(--green);}
+.missing{color:var(--red);}
+.photo-footer{padding:14px 20px;background:var(--red-p);font-size:13px;color:var(--red);font-weight:600;}
+
+/* Pulse chart */
+.pulse-chart{display:flex;align-items:flex-end;gap:8px;height:100px;padding:0 4px;}
+.pulse-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;}
+.pulse-bar{width:100%;border-radius:4px 4px 0 0;background:var(--amber);opacity:.8;min-height:4px;position:relative;}
+.pulse-bar.low{background:var(--border-m);opacity:1;}
+.pulse-bar.peak{opacity:1;box-shadow:0 0 0 2px var(--amber-d);}
+.pulse-day{font-size:10px;color:var(--muted-l);font-weight:600;}
+.pulse-val{font-size:10px;font-weight:700;color:var(--muted);position:absolute;top:-16px;left:50%;transform:translateX(-50%);white-space:nowrap;}
+
+/* Competitor table */
+.comp-table{width:100%;border-collapse:collapse;}
+.comp-table th{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-l);padding:8px 12px;border-bottom:1px solid var(--border);text-align:left;}
+.comp-table td{padding:12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.comp-table tr.you td{background:var(--amber-p);font-weight:600;}
+.comp-table tr:last-child td{border-bottom:none;}
+.comp-rank{font-family:var(--serif);font-size:18px;color:var(--muted-l);}
+.comp-rank.you{color:var(--amber);}
+.comp-mini-bar{height:5px;border-radius:99px;background:var(--border);overflow:hidden;margin-top:4px;}
+.comp-mini-fill{height:100%;border-radius:99px;background:var(--amber);}
+
+/* Checklist */
+.week-group{margin-bottom:20px;}
+.week-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.action-list{display:flex;flex-direction:column;gap:6px;}
+.action-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:var(--r);background:var(--card);border:1px solid var(--border);}
+.action-cb{width:18px;height:18px;border-radius:5px;border:2px solid var(--border-m);flex-shrink:0;margin-top:1px;}
+.action-text{font-size:13px;color:var(--ink-s);flex:1;}
+.action-tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:auto;flex-shrink:0;}
+.tag-quick{background:var(--green-p);color:var(--green);}
+.tag-week{background:var(--amber-p);color:var(--amber-d);}
+.tag-month{background:var(--bg);color:var(--muted);border:1px solid var(--border);}
+
+/* CTA */
+.cta-banner{background:var(--ink);border-radius:var(--r-lg);padding:32px 36px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin:32px 48px 0;}
+.cta-title{font-family:var(--serif);font-size:22px;color:#fff;margin-bottom:6px;}
+.cta-sub{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5;}
+.cta-btn{font-family:var(--sans);font-size:14px;font-weight:700;background:var(--amber);color:var(--ink);border:none;border-radius:var(--r);padding:14px 28px;cursor:pointer;white-space:nowrap;}
+
+.insight-note{margin-top:16px;font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:var(--r);padding:10px 14px;}
+.insight-note strong{color:var(--ink);}
+
+@media(max-width:640px){
+  .cover{padding:28px 24px;}
+  .cover-main{grid-template-columns:1fr;}
+  .section{padding:24px;}
+  .score-grid{grid-template-columns:repeat(2,1fr);}
+  .photo-grid{grid-template-columns:repeat(2,1fr);}
+  .cta-banner{grid-template-columns:1fr;margin:24px;}
+}
+
+
+  /* ── Utilities ── */
+  .hidden { display: none !important; }
+  .section-divider { max-width: 900px; margin: 0 auto; height: 1px; background: var(--border); }
+
+  @media(min-width:900px) {
+    .hero { padding: 100px 80px 72px; }
+    #formSection { padding: 0 80px 72px !important; }
+    #howSection { max-width: 100%; padding: 72px 80px; }
+    #howSection .how-grid { max-width: 900px; margin: 0 auto; }
+    #previewSection { max-width: 100%; padding: 72px 80px; }
+    #previewSection .report-cards-grid,
+    #previewSection .before-after { max-width: 960px; margin: 0 auto; }
+    #previewSection .preview-eyebrow,
+    #previewSection .preview-title,
+    #previewSection .preview-sub,
+    #previewSection > div[style*="justify-content:center"] { max-width: 960px; margin-left: auto; margin-right: auto; }
+    .pricing-wrap { max-width: 100%; padding: 0 80px; }
   }
 
-  @media(max-width:768px){
-    nav{padding:0 16px;}
-    .hero{padding:48px 16px 36px;}
-    h1{font-size:32px;line-height:1.12;}
-    .hero-sub{font-size:15px;margin-bottom:28px;}
-    .form-card{padding:20px 16px;margin:0 0 48px;}
-    .step-label{font-size:9px;}
-    .platform-grid{grid-template-columns:repeat(3,1fr);gap:6px;}
-    .platform-pill{font-size:11.5px;padding:8px 6px;gap:4px;}
-    .pill-dot{width:8px;height:8px;}
-    .excl-row{padding:12px;}
-    .excl-btns{flex-direction:column;gap:6px;}
-    .excl-btn{padding:10px;}
-    .f-group input,.f-group select{font-size:16px;} /* prevent iOS zoom */
-    .f-row{grid-template-columns:1fr;}
-    .how{padding:48px 16px;}
-    .how-grid{grid-template-columns:1fr;gap:28px;}
-    .how h2{font-size:28px;}
-    .pricing-section{padding:48px 16px;}
-    .pricing-grid{grid-template-columns:1fr;}
-    .pricing-section h2{font-size:28px;}
-    /* Whats inside section */
-    section[style*="padding:72px 48px"]{padding:48px 16px !important;}
-    div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;display:grid !important;}
-    /* Before/after table */
-    div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
-    footer{padding:20px 16px;flex-direction:column;gap:8px;text-align:center;}
+
+  @media(max-width:480px) {
+    .hero { padding: 52px 20px 40px !important; }
+    .form-card { padding: 20px 18px; margin: 0 0 48px; }
+    .hero-sub { font-size: 15px; margin-bottom: 28px; }
   }
-  @media(max-width:480px){
-    h1{font-size:28px;}
-    .platform-pill{font-size:11px;padding:7px 4px;}
+
+
+  @media(max-width:640px){
+    #dashMockupSection{padding:48px 20px !important;}
+    .mockup-email{display:none;}
+    .mockup-metrics{grid-template-columns:1fr 1fr !important;}
+    .mockup-bottom{display:none !important;}
   }
 </style>
 </head>
 <body>
+
 <nav>
-  <div class="brand">Plate<span>IQ</span></div>
-  <div>
-    <a href="/login" style="font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;margin-right:16px;">Sign in</a>
-    <button class="nav-cta" onclick="document.getElementById('formCard').scrollIntoView({behavior:'smooth'})">Get started</button>
-  </div>
+  <div class="nav-brand">Plate<span>IQ</span></div>
+  <a href="/login" style="font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;margin-right:12px;">Sign in</a><button class="nav-cta" onclick="document.getElementById('formSection').scrollIntoView({behavior:'smooth'})">Get free audit</button>
 </nav>
 
+<!-- Hero -->
 <section class="hero">
   <div class="hero-inner">
-    <div class="eyebrow">Free listing snapshot</div>
-    <h1>Your delivery listing<br>is losing you <em>orders.</em></h1>
-    <p class="hero-sub">Paste your URL and we'll tell you what we can see about your listing — free, in 30 seconds. No account needed.</p>
-  </div>
-</section>
-
-<section style="padding:0 24px 60px;">
-<div class="form-card" id="formCard">
-  <div class="step-label">Which platforms are you on?</div>
-  <div class="platform-grid">
-    <button type="button" class="platform-pill" onclick="this.classList.toggle('active')" data-p="ubereats"><span class="pill-dot" style="background:#06c167;"></span>Uber Eats</button>
-    <button type="button" class="platform-pill" onclick="this.classList.toggle('active')" data-p="justeeat"><span class="pill-dot" style="background:#ff8000;"></span>Just Eat</button>
-    <button type="button" class="platform-pill" onclick="this.classList.toggle('active')" data-p="deliveroo"><span class="pill-dot" style="background:#00ccbc;"></span>Deliveroo</button>
-  </div>
-  <div class="excl-row">
-    <p style="font-size:13px;font-weight:600;color:var(--ink);">Are you exclusive to one platform?</p>
-    <small style="font-size:12px;color:var(--muted);">Affects which strategies we prioritise for you</small>
-    <div class="excl-btns">
-      <button type="button" class="excl-btn active" onclick="setExcl(this,'no')">On multiple platforms</button>
-      <button type="button" class="excl-btn" onclick="setExcl(this,'yes')">Exclusive to one</button>
-    </div>
-  </div>
-  <div class="step-label">Your listing URL</div>
-  <div class="f-group"><label>Uber Eats / Just Eat / Deliveroo URL</label><input type="url" id="url" placeholder="Paste your restaurant listing URL"></div>
-  <div class="f-divider"></div>
-  <div class="step-label">A few quick details</div>
-  <div class="f-row">
-    <div class="f-group"><label>Restaurant name <span style="color:#dc2626;">*</span></label><input type="text" id="restaurantName" placeholder="e.g. Spice Garden"></div>
-    <div class="f-group"><label>Postcode <span style="color:#dc2626;">*</span></label><input type="text" id="postcode" placeholder="e.g. M1 1AE"></div>
-  </div>
-  <div class="f-group">
-    <label>Cuisine type</label>
-    <select id="cuisine">
-      <option value="">Select cuisine...</option>
-      <option>Indian</option><option>Chinese</option><option>Italian</option><option>Burgers</option>
-      <option>Pizza</option><option>Sushi</option><option>Turkish / Kebab</option><option>Mexican</option>
-      <option>Thai</option><option>Caribbean</option><option>British</option><option>Middle Eastern</option>
-      <option>African</option><option>Healthy / Salads</option><option>Desserts &amp; Shakes</option>
-      <option>Fried Chicken</option><option>Vegan / Vegetarian</option><option>Other</option>
-    </select>
-  </div>
-  <div class="f-group">
-    <label>Your email <span style="color:#dc2626;">*</span></label>
-    <input type="email" id="email" placeholder="owner@yourrestaurant.com">
-  </div>
-  <div style="margin-top:20px;">
-    <button class="btn-primary" id="submitBtn" onclick="submitInterest()">
-      <span id="submitLabel">Get my free snapshot →</span>
-      <span class="spinner" id="spinner"></span>
-    </button>
-    <p class="form-note">Free, instant, no account needed. We'll analyse what we can see on your listing.</p>
-    <div class="form-error" id="formError"></div>
-  </div>
+  <div class="hero-eyebrow">Free restaurant audit</div>
+  <h1>Your delivery listing<br>is losing you <em>orders.</em></h1>
+  <p class="hero-sub">Paste your Uber Eats or Just Eat URL. In 30 seconds we'll tell you exactly what's holding your restaurant back — and what to fix first.</p>
 </div>
 </section>
 
+<!-- Form -->
+<section id="formSection" style="background:var(--bg);padding:0 24px 60px;">
+  <div class="form-card">
 
-<hr style="border:none;border-top:1px solid var(--border);">
-<section style="padding:72px 48px;max-width:960px;margin:0 auto;" id="whatsInsideSection">
-  <div style="text-align:center;margin-bottom:48px;">
-    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">What you get</div>
-    <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,40px);color:var(--ink);margin-bottom:12px;">Your weekly performance dashboard</h2>
-    <p style="font-size:15px;color:var(--muted);max-width:480px;margin:0 auto;">Every week your dashboard updates with real data, AI-written analysis, and specific actions to take.</p>
-  </div>
+    <!-- Step 1: Platforms -->
+    <div class="form-step-label">Which platforms are you on?</div>
+    <div class="platform-grid">
+      <button type="button" class="platform-pill" data-platform="ubereats" onclick="togglePlatform(this)">
+        <span class="pill-dot" style="background:#06c167;"></span> Uber Eats
+      </button>
+      <button type="button" class="platform-pill" data-platform="justeeat" onclick="togglePlatform(this)">
+        <span class="pill-dot" style="background:#ff8000;"></span> Just Eat
+      </button>
+      <button type="button" class="platform-pill" data-platform="deliveroo" onclick="togglePlatform(this)">
+        <span class="pill-dot" style="background:#00ccbc;"></span> Deliveroo
+      </button>
+    </div>
 
-  <!-- Dashboard mockup -->
-  <div style="background:var(--ink);border-radius:20px;padding:3px;box-shadow:0 24px 60px rgba(0,0,0,.18);">
-    <!-- Fake browser bar -->
-    <div style="background:#2a2a2a;border-radius:18px 18px 0 0;padding:10px 16px;display:flex;align-items:center;gap:6px;">
-      <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
-      <div style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></div>
-      <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
-      <div style="flex:1;background:#3a3a3a;border-radius:4px;height:20px;margin:0 16px;display:flex;align-items:center;padding:0 8px;">
-        <span style="font-size:10px;color:rgba(255,255,255,.3);">plateiq.co.uk/dashboard</span>
+    <!-- Exclusivity -->
+    <div style="margin-bottom:20px;padding:14px 16px;background:var(--bg);border-radius:var(--r);border:1.5px solid var(--border);">
+      <div style="margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);">Are you exclusive to one platform?</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Affects which strategies we prioritise for you</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="excl-btn active" id="excl-no" onclick="setExcl(this,'no')" style="flex:1;text-align:center;">On multiple platforms</button>
+        <button type="button" class="excl-btn" id="excl-yes" onclick="setExcl(this,'yes')" style="flex:1;text-align:center;">Exclusive to one</button>
       </div>
     </div>
-    <!-- Dashboard content -->
-    <div style="background:#faf8f4;border-radius:0 0 18px 18px;padding:24px;overflow:hidden;">
-      <!-- Metric cards -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
-        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Orders</div>
-          <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;line-height:1;">312</div>
-          <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; 8% vs last week</div>
-        </div>
-        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Revenue</div>
-          <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;line-height:1;">&pound;7,580</div>
-          <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; &pound;480 vs last week</div>
-        </div>
-        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Avg order value</div>
-          <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;line-height:1;">&pound;24.30</div>
-          <div style="font-size:11px;font-weight:600;color:#e8a020;margin-top:4px;">&rarr; No change</div>
-        </div>
-        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:6px;">Rating</div>
-          <div style="font-family:var(--serif);font-size:24px;color:#1a1a1a;line-height:1;">4.6</div>
-          <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:4px;">&uarr; 0.1 vs last week</div>
-        </div>
+
+    <!-- Step 2: Primary URL -->
+    <div class="form-step-label">Paste your primary listing URL</div>
+    <div class="f-group">
+      <label>Your restaurant URL <span style="color:#dc2626;">*</span></label>
+      <input type="url" id="restaurantUrl" placeholder="Paste your restaurant listing URL" />
+    </div>
+
+    <div class="f-divider"></div>
+
+    <!-- Step 3: Details + email -->
+    <div class="form-step-label">A few quick details</div>
+    <div class="f-row">
+      <div class="f-group">
+        <label>Restaurant name <span style="color:#dc2626;">*</span></label>
+        <input type="text" id="restaurantName" placeholder="e.g. Spice Garden" />
       </div>
-      <!-- Two col -->
-      <div style="display:grid;grid-template-columns:1fr 280px;gap:14px;">
-        <!-- Analysis card -->
-        <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:16px;">
-          <div style="font-family:var(--serif);font-size:15px;color:#1a1a1a;margin-bottom:4px;">Strong Friday, but midweek gap is widening</div>
-          <div style="font-size:12px;color:#6b6b6b;margin-bottom:14px;">Your Friday peak of 98 orders is up 12% week-on-week, which is excellent. However, Monday through Wednesday has dropped to an average of 33 orders per day, which is 28% below the area average for Indian cuisine...</div>
-          <!-- Mini insight cards -->
-          <div style="background:#fef2f2;border-left:3px solid #dc2626;border-radius:6px;padding:10px 12px;margin-bottom:8px;">
-            <div style="font-size:12px;font-weight:700;color:#1a1a1a;">Your Biryani section has zero photos</div>
-            <div style="font-size:11px;color:#3d3d3d;margin-top:2px;">Items without photos get 63% fewer clicks on Uber Eats mobile.</div>
-          </div>
-          <div style="background:#f0fdf4;border-left:3px solid #16a34a;border-radius:6px;padding:10px 12px;">
-            <div style="font-size:12px;font-weight:700;color:#1a1a1a;">Review response rate in top 15%</div>
-            <div style="font-size:11px;color:#3d3d3d;margin-top:2px;">You've responded to 91% of reviews this month &mdash; excellent.</div>
-          </div>
-        </div>
-        <!-- Chart + actions -->
+      <div class="f-group">
+        <label>City / area <span style="color:#dc2626;">*</span></label>
+        <input type="text" id="restaurantCity" placeholder="e.g. Manchester" />
+      </div>
+    </div>
+    <div class="f-group">
+      <label>Cuisine type</label>
+      <select id="cuisineType">
+        <option value="">Select cuisine...</option>
+        <option>Indian</option><option>Chinese</option><option>Italian</option><option>Burgers</option>
+        <option>Pizza</option><option>Sushi</option><option>Turkish / Kebab</option><option>Mexican</option>
+        <option>Thai</option><option>Caribbean</option><option>British</option><option>Middle Eastern</option>
+        <option>Fried Chicken</option><option>Vegan / Vegetarian</option><option>African</option><option>Healthy / Salads</option><option>Desserts &amp; Shakes</option><option>Other</option>
+      </select>
+    </div>
+    <div class="f-group">
+      <label>Your email — we'll send your full report here <span style="color:#dc2626;">*</span></label>
+      <input type="email" id="ownerEmail" placeholder="owner@yourrestaurant.com" />
+    </div>
+
+    <div style="margin-top:20px;">
+      <button class="btn-primary" id="submitBtn" onclick="runAudit()">
+        <span id="submitLabel">Get my free audit →</span>
+        <span class="spinner hidden" id="submitSpinner"></span>
+      </button>
+      <p class="form-note">Free, instant, no credit card. We'll also email you the full results.</p>
+    </div>
+
+    <div id="formError" style="margin-top:12px;font-size:13px;color:#dc2626;display:none;"></div>
+  </div>
+</section>
+
+<!-- Loading -->
+
+
+
+<!-- Loading overlay — sits on top of blurred form -->
+<div id="loadingSection" class="hidden" style="
+  position:fixed; inset:0; z-index:150;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(250,248,244,.85);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+">
+  <div style="background:#fff; border:1px solid var(--border-m); border-radius:20px; padding:40px 44px; max-width:420px; width:90%; box-shadow:0 24px 60px rgba(0,0,0,.12); text-align:left;">
+    <div style="font-family:var(--font-d);font-size:24px;font-weight:700;color:var(--ink);margin-bottom:4px;">Analysing your listing<span id="loadingDots">...</span></div>
+    <div style="font-size:13.5px;color:var(--muted);margin-bottom:28px;">Hang tight, this takes a few seconds</div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="loading-step" id="step1">
+        <div class="step-icon">1</div>
         <div>
-          <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;margin-bottom:12px;">
-            <div style="font-size:11px;font-weight:700;color:#6b6b6b;margin-bottom:12px;">Order trend</div>
-            <div style="display:flex;align-items:flex-end;gap:4px;height:60px;">
-              <div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:31%;opacity:.7;"></div><div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:36%;opacity:.7;"></div><div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:42%;opacity:.7;"></div><div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:51%;opacity:.7;"></div><div style="flex:1;background:#e8a020;border-radius:2px 2px 0 0;height:91%;opacity:1;"></div><div style="flex:1;background:#e8a020;border-radius:2px 2px 0 0;height:100%;opacity:1;"></div><div style="flex:1;background:rgba(26,26,26,.15);border-radius:2px 2px 0 0;height:62%;opacity:.7;"></div>
-            </div>
-            <div style="display:flex;gap:4px;margin-top:4px;">
-              <div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">M</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">T</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">W</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">T</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">F</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">S</div><div style="flex:1;font-size:8px;color:#a0a0a0;text-align:center;">S</div>
-            </div>
+          <div style="font-size:13.5px;font-weight:600;color:inherit;">Reading your menu structure</div>
+        </div>
+      </div>
+      <div class="loading-step" id="step2">
+        <div class="step-icon">2</div>
+        <div>
+          <div style="font-size:13.5px;font-weight:600;color:inherit;">Checking photo coverage</div>
+        </div>
+      </div>
+      <div class="loading-step" id="step3">
+        <div class="step-icon">3</div>
+        <div>
+          <div style="font-size:13.5px;font-weight:600;color:inherit;">Benchmarking against your area</div>
+        </div>
+      </div>
+      <div class="loading-step" id="step4">
+        <div class="step-icon">4</div>
+        <div>
+          <div style="font-size:13.5px;font-weight:600;color:inherit;">Generating your recommendations</div>
+        </div>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div style="margin-top:24px;height:4px;background:var(--border);border-radius:99px;overflow:hidden;">
+      <div id="loadingBar" style="height:100%;background:var(--amber);border-radius:99px;width:0%;transition:width .5s ease;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<section id="resultsSection">
+
+  <div class="score-hero">
+    <div class="score-circle" id="scoreCircle">
+      <div class="score-inner">
+        <div class="score-num" id="scoreNum">0</div>
+        <div class="score-denom">/100</div>
+      </div>
+    </div>
+    <div class="score-label" id="scoreLabel">Calculating...</div>
+    <div class="score-sub" id="scoreSub"></div>
+  </div>
+
+  <div class="resto-header" id="restoHeader">
+    <div class="resto-icon">🍽️</div>
+    <div>
+      <div class="resto-name" id="restoName"></div>
+      <div class="resto-meta" id="restoMeta"></div>
+      <div class="resto-badges" id="restoBadges"></div>
+    </div>
+  </div>
+
+  <div class="insights-label">Your 3 free insights</div>
+  <div id="insightsList"></div>
+
+  <div class="locked-section">
+    <div class="locked-header">
+      <span class="lock-icon">🔒</span>
+      <span class="locked-title">5 more recommendations — plus implementation</span>
+    </div>
+    <p class="locked-sub">These cover your pricing strategy, competitor gap analysis, promotional opportunities, cross-platform consistency, and your highest-impact quick wins for this week.</p>
+    <div class="locked-cards" id="lockedCards"></div>
+    <button class="btn-unlock" onclick="document.getElementById('pricingSection').scrollIntoView({behavior:'smooth'})">
+      See plans &amp; pricing →
+    </button>
+  </div>
+
+</section>
+
+<!-- How it works -->
+
+<div class="section-divider"></div>
+
+<!-- Dashboard mockup -->
+<section style="padding:72px 48px;background:var(--ink);" id="dashMockupSection">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:40px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;">Your dashboard</div>
+      <div style="font-family:var(--font-d);font-size:clamp(24px,3.5vw,38px);color:#fff;margin-bottom:8px;">Everything in one place, updated every week.</div>
+      <p style="font-size:14px;color:rgba(255,255,255,.5);">Log in any time to see your numbers, your report, and exactly what to do next.</p>
+    </div>
+    <div style="background:#faf8f4;border-radius:18px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.4);">
+      <!-- Mockup nav -->
+      <div style="background:#fff;border-bottom:1px solid rgba(26,26,26,.1);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-family:var(--font-d);font-size:17px;color:#1a1a1a;">Plate<span style="color:#e8a020;">IQ</span></div>
+        <div style="display:flex;gap:4px;">
+          <div style="font-size:12px;font-weight:600;color:#1a1a1a;background:#faf8f4;padding:5px 12px;border-radius:8px;">Report</div>
+          <div style="font-size:12px;font-weight:600;color:#6b6b6b;padding:5px 12px;">Account</div>
+        </div>
+        <div style="font-size:11px;color:#a0a0a0;" class="mockup-email">spicegarden@email.com</div>
+      </div>
+      <!-- Mockup content -->
+      <div style="padding:22px;">
+        <div style="margin-bottom:14px;">
+          <div style="font-family:var(--font-d);font-size:20px;color:#1a1a1a;margin-bottom:2px;">Spice Garden</div>
+          <div style="font-size:12px;color:#6b6b6b;">M1 1AE &middot; Uber Eats + Just Eat</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#e8a020;margin-top:4px;">Week ending 27 Jul 2026</div>
+        </div>
+        <!-- 4 metric cards -->
+        <div class="mockup-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:10px;padding:12px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:4px;">Orders</div>
+            <div style="font-family:var(--font-d);font-size:20px;color:#1a1a1a;">312</div>
+            <div style="font-size:10px;font-weight:600;color:#16a34a;margin-top:2px;">&uarr; 28 vs last week</div>
           </div>
-          <div style="background:#fff;border:1px solid rgba(26,26,26,.1);border-radius:10px;padding:14px;">
-            <div style="font-size:11px;font-weight:700;color:#6b6b6b;margin-bottom:10px;">This week's actions</div>
-            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(26,26,26,.07);font-size:11px;color:#3d3d3d;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;"></div>Upload Biryani photos</div><div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(26,26,26,.07);font-size:11px;color:#3d3d3d;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;"></div>Reply to 3 unanswered reviews</div><div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(26,26,26,.07);font-size:11px;color:#3d3d3d;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;"></div>Create Midweek Meal Deal</div>
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:10px;padding:12px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:4px;">Revenue</div>
+            <div style="font-family:var(--font-d);font-size:20px;color:#1a1a1a;">&pound;7,580</div>
+            <div style="font-size:10px;font-weight:600;color:#16a34a;margin-top:2px;">&uarr; &pound;680</div>
+          </div>
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:10px;padding:12px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:4px;">Avg order</div>
+            <div style="font-family:var(--font-d);font-size:20px;color:#1a1a1a;">&pound;24.30</div>
+            <div style="font-size:10px;font-weight:600;color:#e8a020;margin-top:2px;">&rarr; No change</div>
+          </div>
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:10px;padding:12px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#a0a0a0;margin-bottom:4px;">Rating</div>
+            <div style="font-family:var(--font-d);font-size:20px;color:#1a1a1a;">4.6</div>
+            <div style="font-size:10px;font-weight:600;color:#16a34a;margin-top:2px;">&uarr; 0.1</div>
+          </div>
+        </div>
+        <!-- Bottom row — hidden on mobile -->
+        <div class="mockup-bottom" style="display:grid;grid-template-columns:1fr 240px;gap:10px;">
+          <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:10px;padding:14px;">
+            <div style="font-family:var(--font-d);font-size:13px;color:#1a1a1a;margin-bottom:6px;">Strong Friday performance, but midweek gap is widening</div>
+            <div style="font-size:11px;color:#6b6b6b;margin-bottom:10px;line-height:1.5;">Orders grew 9.8% week-on-week. Mon&ndash;Wed volume is 31% below area average for Indian cuisine in M1.</div>
+            <div style="background:#fef3dc;border-left:3px solid #e8a020;border-radius:6px;padding:9px;margin-bottom:6px;font-size:11px;font-weight:700;color:#1a1a1a;">&#128194; Splitting &ldquo;Extras&rdquo; could increase basket size by &pound;2&ndash;4</div>
+            <div style="background:#f0fdf4;border-left:3px solid #16a34a;border-radius:6px;padding:9px;font-size:11px;font-weight:700;color:#1a1a1a;">&#11088; Review response rate in top 15% for your area</div>
+          </div>
+          <div>
+            <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:10px;padding:12px;margin-bottom:8px;">
+              <div style="font-family:var(--font-d);font-size:12px;color:#1a1a1a;margin-bottom:8px;">Order trend</div>
+              <div style="display:flex;align-items:flex-end;gap:3px;height:44px;">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;"><div style="width:100%;background:rgba(26,26,26,.1);border-radius:2px 2px 0 0;height:30%;"></div><div style="font-size:7px;color:#a0a0a0;">w1</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;"><div style="width:100%;background:rgba(26,26,26,.1);border-radius:2px 2px 0 0;height:50%;"></div><div style="font-size:7px;color:#a0a0a0;">w2</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;"><div style="width:100%;background:#e8a020;opacity:.5;border-radius:2px 2px 0 0;height:65%;"></div><div style="font-size:7px;color:#a0a0a0;">w3</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;"><div style="width:100%;background:#e8a020;opacity:.75;border-radius:2px 2px 0 0;height:80%;"></div><div style="font-size:7px;color:#a0a0a0;">w4</div></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;"><div style="width:100%;background:#e8a020;border-radius:2px 2px 0 0;height:100%;box-shadow:0 0 0 1.5px #c47f0a;"></div><div style="font-size:7px;color:#a0a0a0;font-weight:700;">now</div></div>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid rgba(26,26,26,.12);border-radius:10px;padding:12px;">
+              <div style="font-family:var(--font-d);font-size:12px;color:#1a1a1a;margin-bottom:7px;">This week</div>
+              <div style="font-size:10.5px;color:#3d3d3d;display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;"><div style="width:12px;height:12px;border-radius:3px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;margin-top:1px;"></div>Add photos to Biryani section</div>
+              <div style="font-size:10.5px;color:#3d3d3d;display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;"><div style="width:12px;height:12px;border-radius:3px;border:1.5px solid rgba(26,26,26,.2);flex-shrink:0;margin-top:1px;"></div>Respond to 3 unanswered reviews</div>
+              <div style="font-size:10.5px;color:#3d3d3d;display:flex;gap:6px;align-items:flex-start;"><div style="width:12px;height:12px;border-radius:3px;background:#e8a020;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;">&#10003;</div>Launch midweek meal deal</div>
+            </div>
           </div>
         </div>
       </div>
@@ -299,262 +761,610 @@ footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-si
   </div>
 </section>
 
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-card">
-    <div class="loading-title">Analysing your listing...</div>
-    <div class="loading-sub">Checking what we can actually see</div>
-    <div class="l-step" id="ls1"><div class="l-icon">1</div>Reading your listing URL</div>
-    <div class="l-step" id="ls2"><div class="l-icon">2</div>Checking menu &amp; photo coverage</div>
-    <div class="l-step" id="ls3"><div class="l-icon">3</div>Benchmarking against your area</div>
-    <div class="l-step" id="ls4"><div class="l-icon">4</div>Writing your recommendations</div>
-    <div class="progress-bar"><div class="progress-fill" id="pf"></div></div>
-  </div>
-</div>
-<hr style="border:none;border-top:1px solid var(--border);">
-<section class="how">
-  <h2>How PlateIQ works</h2>
+<div class="section-divider"></div>
+<section id="howSection">
+  <div class="how-title">How PlateIQ works</div>
   <div class="how-grid">
-    <div><div class="how-num">01</div><div class="how-lbl">Tell us about your restaurant</div><div class="how-desc">Share your details and which platforms you’re on. We’ll get you set up within 48 hours.</div></div>
-    <div><div class="how-num">02</div><div class="how-lbl">We audit &amp; implement</div><div class="how-desc">Our team logs into your Uber Eats and Just Eat accounts, reviews your performance, and makes improvements — photos, menu, pricing, promotions.</div></div>
-    <div><div class="how-num">03</div><div class="how-lbl">Watch the numbers move</div><div class="how-desc">Every week your dashboard updates with your latest performance data, AI-generated analysis, and your action list.</div></div>
+    <div class="how-card">
+      <div class="how-num">01</div>
+      <div class="how-label">Paste your URL</div>
+      <div class="how-desc">We analyse your live listing on Uber Eats or Just Eat — your menu, photos, pricing, ratings, and positioning.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">02</div>
+      <div class="how-label">Get your audit</div>
+      <div class="how-desc">Instant AI-powered analysis benchmarked against top performers in your cuisine and area. No fluff, no generic advice.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">03</div>
+      <div class="how-label">We implement it</div>
+      <div class="how-desc">On paid plans, our team logs into your account and makes the changes for you. You focus on the kitchen.</div>
+    </div>
   </div>
 </section>
 
-<hr style="border:none;border-top:1px solid var(--border);">
+<div class="section-divider"></div>
 
-<!-- What's inside section -->
-<section style="padding:72px 48px;max-width:960px;margin:0 auto;" id="whatsInsideSection">
-  <div style="text-align:center;margin-bottom:16px;">
-    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">What's inside</div>
-    <h2 style="font-family:var(--serif);font-size:clamp(26px,4vw,42px);color:var(--ink);line-height:1.1;margin-bottom:12px;">Everything your competitors<br><em style="font-style:italic;color:var(--amber);">don't want you to know.</em></h2>
-    <p style="font-size:15px;color:var(--muted);max-width:520px;margin:0 auto 24px;line-height:1.65;">The restaurants winning on Uber Eats and Just Eat are not just better &mdash; they're optimised. Here's what your full report shows you.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:48px;">
-      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#128248; Photo gap analysis</span>
-      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#127942; Competitor breakdown</span>
-      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#128200; Order growth projection</span>
-      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#128176; Pricing strategy</span>
-      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#9889; Weekly action checklist</span>
-      <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber-d);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">&#128260; Cross-platform audit</span>
-    </div>
+<!-- Preview section -->
+<div class="section-divider"></div>
+<section id="previewSection">
+  <div class="preview-eyebrow">What's inside</div>
+  <div class="preview-title">Everything your competitors<br><em style="font-style:italic;color:var(--amber);">don't want you to know.</em></div>
+  <p class="preview-sub" style="margin-bottom:16px;">The restaurants winning on Uber Eats and Just Eat aren't just better — they're optimised. Here's what your full report shows you.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:40px;">
+    <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">📸 Photo gap analysis</span>
+    <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">🏆 Competitor breakdown</span>
+    <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">📈 Order growth projection</span>
+    <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">💰 Pricing strategy</span>
+    <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">⚡ Weekly action checklist</span>
+    <span style="font-size:12px;font-weight:600;background:var(--amber-p);color:var(--amber);padding:5px 14px;border-radius:99px;border:1px solid rgba(232,160,32,.25);">🔄 Cross-platform audit</span>
   </div>
 
-  <!-- Report preview cards -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:48px;">
+  <div class="report-cards-grid">
 
     <!-- Card 1: Score -->
-    <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:12px;">Menu health score</div>
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-        <div style="width:56px;height:56px;border-radius:50%;background:conic-gradient(var(--amber) 71%,#eee 71%);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <div style="width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:14px;font-weight:700;color:var(--ink);">71</div>
-        </div>
-        <div>
-          <div style="font-family:var(--serif);font-size:15px;font-weight:400;color:var(--ink);">Good foundations</div>
-          <div style="font-size:12px;color:var(--muted);">Ranked #4 in your area &middot; 3 critical gaps found</div>
+    <div class="report-card-preview" data-delay="0">
+      <div class="rcp-label">Menu health score</div>
+      <div class="rcp-score-row">
+        <div class="rcp-mini-circle"><div class="rcp-mini-inner" id="prevScore">71</div></div>
+        <div class="rcp-score-detail">
+          <div class="rcp-score-title">Good foundations</div>
+          <div class="rcp-score-sub">Ranked #4 in your area · 3 critical gaps found</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:110px;flex-shrink:0;">Photo coverage</span><div style="flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:40%;height:100%;background:var(--red);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);width:32px;text-align:right;">40%</span></div>
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:110px;flex-shrink:0;">Menu structure</span><div style="flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:75%;height:100%;background:var(--amber);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);width:32px;text-align:right;">75%</span></div>
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:110px;flex-shrink:0;">Pricing match</span><div style="flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:85%;height:100%;background:var(--green);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);width:32px;text-align:right;">85%</span></div>
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:110px;flex-shrink:0;">Visibility score</span><div style="flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:60%;height:100%;background:var(--amber);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);width:32px;text-align:right;">60%</span></div>
+      <div style="margin-top:16px;" class="rcp-bars">
+        <div class="rcp-bar-row"><span class="rcp-bar-label">Photo coverage</span><div class="rcp-bar-track"><div class="rcp-bar-fill" data-w="40"></div></div><span class="rcp-bar-val">40%</span></div>
+        <div class="rcp-bar-row"><span class="rcp-bar-label">Menu structure</span><div class="rcp-bar-track"><div class="rcp-bar-fill" data-w="75"></div></div><span class="rcp-bar-val">75%</span></div>
+        <div class="rcp-bar-row"><span class="rcp-bar-label">Pricing match</span><div class="rcp-bar-track"><div class="rcp-bar-fill" data-w="85"></div></div><span class="rcp-bar-val">85%</span></div>
+        <div class="rcp-bar-row"><span class="rcp-bar-label">Visibility score</span><div class="rcp-bar-track"><div class="rcp-bar-fill" data-w="60"></div></div><span class="rcp-bar-val">60%</span></div>
       </div>
     </div>
 
     <!-- Card 2: Priorities -->
-    <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:12px;">Top 3 actions this week</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--r);font-size:13px;color:var(--ink-s);"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-top:5px;"></span>Add photos to your 9 most-ordered items</div>
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--r);font-size:13px;color:var(--ink-s);"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-top:5px;"></span>Rename &ldquo;Combo 1&rdquo; &mdash; customers don&rsquo;t click unnamed items</div>
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--r);font-size:13px;color:var(--ink-s);"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-top:5px;"></span>Your minimum order (&pound;25) is 40% above area average</div>
+    <div class="report-card-preview" data-delay="100">
+      <div class="rcp-label">Top 3 actions this week</div>
+      <div class="rcp-priorities">
+        <div class="rcp-priority">Add photos to your 9 most-ordered items</div>
+        <div class="rcp-priority">Rename "Combo 1" — customers don't click unnamed items</div>
+        <div class="rcp-priority">Your minimum order (£25) is 40% above area average</div>
       </div>
     </div>
 
-    <!-- Card 3: Checklist (locked) -->
-    <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;position:relative;overflow:hidden;">
-      <div style="position:absolute;inset:0;background:rgba(250,248,244,.88);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;border-radius:var(--r-lg);z-index:2;">
-        <span style="font-size:12px;font-weight:700;color:var(--muted);background:var(--card);padding:6px 16px;border-radius:99px;border:1px solid var(--border-m);">&#128274; Paid plan</span>
-      </div>
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:12px;">Weekly optimisation checklist</div>
-      <div style="display:flex;flex-direction:column;gap:7px;">
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;">&#10003;</div>Update hero image</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;">&#10003;</div>Add bundle offer for Friday</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-m);flex-shrink:0;"></div>Review competitor pricing</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-m);flex-shrink:0;"></div>Upload 4 new food photos</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-s);"><div style="width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-m);flex-shrink:0;"></div>Respond to 3 unanswered reviews</div>
+    <!-- Card 3: Weekly checklist (locked) -->
+    <div class="report-card-preview rcp-locked-overlay" data-delay="200">
+      <div class="rcp-label">Weekly optimisation checklist</div>
+      <div class="rcp-checklist">
+        <div class="rcp-check-item"><div class="rcp-check-box rcp-check-done">✓</div>Update hero image</div>
+        <div class="rcp-check-item"><div class="rcp-check-box rcp-check-done">✓</div>Add bundle offer for Friday</div>
+        <div class="rcp-check-item"><div class="rcp-check-box rcp-check-todo"></div>Review competitor pricing</div>
+        <div class="rcp-check-item"><div class="rcp-check-box rcp-check-todo"></div>Upload 4 new food photos</div>
+        <div class="rcp-check-item"><div class="rcp-check-box rcp-check-todo"></div>Respond to 3 unanswered reviews</div>
       </div>
     </div>
 
     <!-- Card 4: Competitor (locked) -->
-    <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;position:relative;overflow:hidden;">
-      <div style="position:absolute;inset:0;background:rgba(250,248,244,.88);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;border-radius:var(--r-lg);z-index:2;">
-        <span style="font-size:12px;font-weight:700;color:var(--muted);background:var(--card);padding:6px 16px;border-radius:99px;border:1px solid var(--border-m);">&#128274; Paid plan</span>
+    <div class="report-card-preview rcp-locked-overlay" data-delay="300">
+      <div class="rcp-label">Competitor gap analysis</div>
+      <div class="rcp-bars" style="margin-top:8px;">
+        <div class="rcp-bar-row"><span class="rcp-bar-label">You</span><div class="rcp-bar-track"><div class="rcp-bar-fill" data-w="71"></div></div><span class="rcp-bar-val">71</span></div>
+        <div class="rcp-bar-row"><span class="rcp-bar-label">#1 in area</span><div class="rcp-bar-track"><div class="rcp-bar-fill" data-w="94"></div></div><span class="rcp-bar-val">94</span></div>
+        <div class="rcp-bar-row"><span class="rcp-bar-label">Area average</span><div class="rcp-bar-track"><div class="rcp-bar-fill" data-w="63"></div></div><span class="rcp-bar-val">63</span></div>
       </div>
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:12px;">Competitor gap analysis</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:80px;flex-shrink:0;">You</span><div style="flex:1;height:5px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:71%;height:100%;background:var(--amber);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);">71</span></div>
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:80px;flex-shrink:0;">#1 in area</span><div style="flex:1;height:5px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:94%;height:100%;background:var(--green);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);">94</span></div>
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--ink-s);width:80px;flex-shrink:0;">Area average</span><div style="flex:1;height:5px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:63%;height:100%;background:var(--muted-l);border-radius:99px;"></div></div><span style="font-size:11px;font-weight:600;color:var(--ink);">63</span></div>
-      </div>
-      <div style="margin-top:12px;font-size:12px;color:var(--ink-s);">You're above average but 23 points behind the leader. Here's exactly what they're doing differently...</div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--ink-s);">You're above average but 23 points behind the leader. Here's exactly what they're doing differently...</div>
     </div>
+
   </div>
 
   <!-- Before / After -->
-  <div style="background:var(--ink);border-radius:var(--r-lg);overflow:hidden;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;min-width:0;">
-      <div style="padding:14px 20px;font-family:var(--sans);font-size:13px;font-weight:700;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);">&#10060; Without PlateIQ</div>
-      <div style="padding:14px 20px;font-family:var(--sans);font-size:13px;font-weight:700;background:var(--amber);color:var(--ink);">&#10003; With PlateIQ</div>
+  <div class="before-after">
+    <div class="ba-header">
+      <div class="ba-col-head before">❌ Without PlateIQ</div>
+      <div class="ba-col-head after">✓ With PlateIQ</div>
     </div>
-    <div>
-      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Photos</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">4 of 18 items have photos <span style="font-size:10px;font-weight:700;background:rgba(220,38,38,.2);color:#f87171;padding:2px 7px;border-radius:99px;">-78%</span></div>
-        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">18 of 18 &mdash; full coverage <span style="font-size:10px;font-weight:700;background:rgba(232,160,32,.2);color:var(--amber);padding:2px 7px;border-radius:99px;">Done</span></div>
+    <div class="ba-rows">
+      <div class="ba-label">Photos</div>
+      <div class="ba-row">
+        <div class="ba-cell before-cell">4 of 18 items have photos <span class="ba-pill-bad">-78%</span></div>
+        <div class="ba-cell after-cell">18 of 18 items — full coverage <span class="ba-pill-good">Done</span></div>
       </div>
-      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Menu</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">&ldquo;Combo 1&rdquo;, &ldquo;Combo 2&rdquo; &mdash; no descriptions</div>
-        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">Named items, descriptions, clear upsells</div>
+      <div class="ba-label">Menu</div>
+      <div class="ba-row">
+        <div class="ba-cell before-cell">"Combo 1", "Combo 2", "Special" — no descriptions</div>
+        <div class="ba-cell after-cell">Named items, appetising descriptions, clear upsells</div>
       </div>
-      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Orders</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">~47 orders/week <span style="font-size:10px;font-weight:700;background:rgba(220,38,38,.2);color:#f87171;padding:2px 7px;border-radius:99px;">Below avg</span></div>
-        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">~71 orders/week projected <span style="font-size:10px;font-weight:700;background:rgba(232,160,32,.2);color:var(--amber);padding:2px 7px;border-radius:99px;">+51%</span></div>
+      <div class="ba-label">Orders</div>
+      <div class="ba-row">
+        <div class="ba-cell before-cell">~47 orders/week estimated <span class="ba-pill-bad">Below area avg</span></div>
+        <div class="ba-cell after-cell">~71 orders/week projected <span class="ba-pill-good">+51%</span></div>
       </div>
-      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Promotions</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">No active offers running</div>
-        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">Strategic weekly offers scheduled &amp; live</div>
+      <div class="ba-label">Promotions</div>
+      <div class="ba-row">
+        <div class="ba-cell before-cell">No active offers running</div>
+        <div class="ba-cell after-cell">Strategic weekly offers scheduled &amp; live</div>
       </div>
-      <div style="padding:4px 20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);">Reviews</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);">
-        <div style="padding:10px 14px;font-size:12px;color:rgba(255,255,255,.45);">12 unanswered reviews in last 30 days</div>
-        <div style="padding:10px 14px;font-size:12px;color:#fff;font-weight:600;">100% response rate &mdash; managed weekly</div>
+      <div class="ba-label">Reviews</div>
+      <div class="ba-row">
+        <div class="ba-cell before-cell">12 unanswered reviews in last 30 days</div>
+        <div class="ba-cell after-cell">100% response rate — managed weekly</div>
       </div>
+    </div>
+  </div>
+
+</section>
+<div class="section-divider"></div>
+
+<!-- Pricing -->
+<section id="pricingSection" style="width:100%;">
+  <div class="pricing-wrap">
+    <div class="pricing-eyebrow">Pricing</div>
+    <div class="pricing-title">Pick your level of support</div>
+    <div class="pricing-sub">No contracts. Cancel anytime.</div>
+    <div class="pricing-grid">
+
+      <div class="pricing-card">
+        <div class="pricing-tier">Starter</div>
+        <div class="pricing-price">£199</div>
+        <div class="pricing-period">per month</div>
+        <ul class="pricing-list">
+          <li>Weekly AI performance report</li>
+          <li>Full audit — all recommendations</li>
+          <li>Email delivery every Monday</li>
+          <li>Rating &amp; review monitoring</li>
+          <li>Competitor tracking (3 restaurants)</li>
+        </ul>
+        <button class="btn-pricing" onclick="window.location.href='/login?mode=register'">Get started</button>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-tier">Growth — Most popular</div>
+        <div class="pricing-price">£499</div>
+        <div class="pricing-period">per month</div>
+        <ul class="pricing-list">
+          <li>Everything in Starter</li>
+          <li>Monthly menu optimisation — we make the changes</li>
+          <li>Photo audit + upload recommendations</li>
+          <li>Promotional strategy &amp; scheduling</li>
+          <li>Cross-platform consistency review</li>
+          <li>WhatsApp support channel</li>
+        </ul>
+        <button class="btn-pricing" onclick="window.location.href='/login?mode=register'">Get started</button>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-tier">Partner</div>
+        <div class="pricing-price">£999</div>
+        <div class="pricing-period">per month</div>
+        <ul class="pricing-list">
+          <li>Everything in Growth</li>
+          <li>Weekly managed changes — not monthly</li>
+          <li>Seasonal menu planning</li>
+          <li>A/B testing menu items &amp; pricing</li>
+          <li>Monthly strategy call</li>
+          <li>Dedicated account manager</li>
+        </ul>
+        <button class="btn-pricing" onclick="window.location.href='/login?mode=register'">Get started</button>
+      </div>
+
     </div>
   </div>
 </section>
 
-<section class="pricing-section" id="pricing">
-  <div class="pricing-inner">
-    <h2>Pick your level of support</h2>
-    <p>No contracts. Cancel anytime.</p>
-    <div class="pricing-grid">
-      <div class="p-card">
-        <div class="p-tier">Starter</div><div class="p-price">&pound;199</div><div class="p-period">per month</div>
-        <ul class="p-list">
-          <li>Weekly AI performance report</li>
-          <li>Full performance dashboard</li>
-          <li>Rating &amp; review monitoring</li>
-          <li>Competitor tracking</li>
-          <li>You implement the recommendations</li>
-        </ul>
-        <button class="p-btn" onclick="window.location.href='/login?mode=register'">Get started</button>
-      </div>
-      <div class="p-card featured">
-        <div class="p-tier">Growth — Most popular</div><div class="p-price">&pound;499</div><div class="p-period">per month</div>
-        <ul class="p-list">
-          <li>Everything in Starter</li>
-          <li>Monthly menu optimisation — we make the changes</li>
-          <li>Photo audit + uploads</li>
-          <li>Promotional strategy</li>
-          <li>WhatsApp support</li>
-        </ul>
-        <button class="p-btn" onclick="window.location.href='/login?mode=register&plan=growth'">Get started</button>
-      </div>
-      <div class="p-card">
-        <div class="p-tier">Partner</div><div class="p-price">&pound;999</div><div class="p-period">per month</div>
-        <ul class="p-list">
-          <li>Everything in Growth</li>
-          <li>Weekly managed changes</li>
-          <li>Seasonal menu planning</li>
-          <li>Monthly strategy call</li>
-          <li>Dedicated account manager</li>
-        </ul>
-        <button class="p-btn" onclick="window.location.href='/login?mode=register&plan=partner'">Get started</button>
-      </div>
-    </div>
-  </div>
-</section>
 <footer>
-  <p style="font-family:var(--serif);font-size:16px;color:var(--ink-s);margin-bottom:6px;">Plate<span style="color:var(--amber);">IQ</span></p>
-  <p>Restaurant delivery intelligence &middot; &copy; 2026 &middot; <a href="/login" style="color:var(--muted-l);text-decoration:none;">Client login</a></p>
+  <p style="margin-bottom:8px;"><strong style="font-family:var(--font-d);color:var(--ink-s);">Plate<span style="color:var(--amber);">IQ</span></strong></p>
+  <p>Restaurant delivery intelligence · <a href="#">Privacy</a> · <a href="#">Contact</a> · © 2026</p>
 </footer>
 
 
 
-<script>
-var exclusivity = 'no';
+<div id="demoPage" style="display:none;position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:200;">
+  <div style="max-width:860px;margin:0 auto;padding-bottom:80px;">
+    <div style="background:var(--amber);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:201;">
+      <div style="font-family:var(--font-b);font-size:13px;font-weight:700;color:var(--ink);">
+        &#128276; Demo report &mdash; sample for &ldquo;Spice Garden, Manchester&rdquo;
+      </div>
+      <button onclick="document.getElementById('demoPage').style.display='none'" style="font-family:var(--font-b);font-size:13px;font-weight:700;background:var(--ink);color:#fff;border:none;border-radius:99px;padding:6px 16px;cursor:pointer;">
+        &larr; Back
+      </button>
+    </div>
+<div class="report">
 
+<div class="cover">
+  <div class="cover-top">
+    <div class="brand">Plate<span>IQ</span></div>
+    <div class="report-date">Weekly Report<br>Week of 21 Jul 2026</div>
+  </div>
+  <div class="cover-main">
+    <div>
+      <div class="resto-label">Restaurant performance report</div>
+      <div class="resto-name">Spice Garden</div>
+      <div class="resto-meta">Indian &middot; Northern Quarter, Manchester &middot; Uber Eats &amp; Just Eat</div>
+      <div class="cover-tags">
+        <span class="cover-tag amber">4.6 &starf; rating</span>
+        <span class="cover-tag">12 min avg delivery</span>
+        <span class="cover-tag">&pound;18 min order</span>
+        <span class="cover-tag">On platform 3 years</span>
+      </div>
+    </div>
+    <div class="score-ring">
+      <svg class="ring-svg" viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="50"/>
+        <circle class="ring-fill" cx="60" cy="60" r="50"/>
+        <text class="ring-num" x="60" y="56">71</text>
+        <text class="ring-denom" x="60" y="74">/100</text>
+      </svg>
+      <div class="ring-label">GOOD FOUNDATIONS</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-eyebrow">Performance scorecard</div>
+  <div class="section-title">Where you stand across 5 dimensions</div>
+  <div class="score-grid">
+    <div class="score-cell">
+      <div class="score-cell-num" style="color:var(--red)">4.2</div>
+      <div class="score-cell-label">Photo Coverage</div>
+      <div class="score-cell-bar"><div class="score-cell-fill" style="width:42%;background:var(--red);"></div></div>
+    </div>
+    <div class="score-cell">
+      <div class="score-cell-num" style="color:var(--amber)">6.8</div>
+      <div class="score-cell-label">Menu Structure</div>
+      <div class="score-cell-bar"><div class="score-cell-fill" style="width:68%;background:var(--amber);"></div></div>
+    </div>
+    <div class="score-cell">
+      <div class="score-cell-num" style="color:var(--green)">8.1</div>
+      <div class="score-cell-label">Pricing Match</div>
+      <div class="score-cell-bar"><div class="score-cell-fill" style="width:81%;background:var(--green);"></div></div>
+    </div>
+    <div class="score-cell">
+      <div class="score-cell-num" style="color:var(--amber)">7.0</div>
+      <div class="score-cell-label">Platform Visibility</div>
+      <div class="score-cell-bar"><div class="score-cell-fill" style="width:70%;background:var(--amber);"></div></div>
+    </div>
+    <div class="score-cell">
+      <div class="score-cell-num" style="color:var(--green)">8.4</div>
+      <div class="score-cell-label">Review Health</div>
+      <div class="score-cell-bar"><div class="score-cell-fill" style="width:84%;background:var(--green);"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-eyebrow">This week&rsquo;s findings</div>
+  <div class="section-title">3 things holding you back right now</div>
+  <div class="alert-grid">
+    <div class="alert-card critical">
+      <div class="alert-icon">&#128247;</div>
+      <div>
+        <div class="alert-title">Only 8 of 24 menu items have a photo</div>
+        <div class="alert-body">Items without photos on Uber Eats receive on average 63% fewer clicks than photographed items. Your Biryani section &mdash; your highest-margin category &mdash; has zero photos. Customers browsing on mobile will skip straight past it.</div>
+        <span class="alert-impact">Adding photos to top 8 items = estimated +18&ndash;24 orders/week</span>
+      </div>
+    </div>
+    <div class="alert-card warning">
+      <div class="alert-icon">&#128194;</div>
+      <div>
+        <div class="alert-title">Menu category &ldquo;Extras&rdquo; is suppressing basket size</div>
+        <div class="alert-body">You have 14 items grouped under &ldquo;Extras&rdquo; &mdash; rice, naan, sides, drinks, and sauces. This catch-all category has the second-highest view count but one of the lowest click-through rates. Splitting into &ldquo;Sides &amp; Rice&rdquo;, &ldquo;Breads&rdquo;, and &ldquo;Drinks&rdquo; would surface items customers are looking for and increase add-ons per order.</div>
+        <span class="alert-impact">Restructured categories typically increase average basket by &pound;2.40&ndash;&pound;3.80</span>
+      </div>
+    </div>
+    <div class="alert-card positive">
+      <div class="alert-icon">&#11088;</div>
+      <div>
+        <div class="alert-title">Your review response rate is in the top 15% for Manchester Indian</div>
+        <div class="alert-body">You&rsquo;ve responded to 91% of reviews in the last 30 days &mdash; that&rsquo;s exceptional. Uber Eats rewards consistent review engagement with improved search placement. The 3 unanswered reviews this week are in your checklist below.</div>
+        <span class="alert-impact">Maintain this to protect your current ranking position</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-eyebrow">Photo audit</div>
+  <div class="section-title">Item-by-item photo coverage</div>
+  <div class="photo-audit">
+    <div class="photo-header">
+      <div class="photo-title">24 menu items &mdash; 8 with photos, 16 missing</div>
+      <div class="photo-score">33%</div>
+    </div>
+    <div class="photo-grid">
+      <div class="photo-item"><div class="photo-item-name">Chicken Tikka Masala</div><div class="photo-item-status has">&#10003; Photo</div></div>
+      <div class="photo-item"><div class="photo-item-name">Lamb Rogan Josh</div><div class="photo-item-status has">&#10003; Photo</div></div>
+      <div class="photo-item"><div class="photo-item-name">Vegetable Korma</div><div class="photo-item-status missing">&#10007; Missing</div></div>
+      <div class="photo-item"><div class="photo-item-name">Chicken Biryani</div><div class="photo-item-status missing">&#10007; Missing</div></div>
+      <div class="photo-item"><div class="photo-item-name">Lamb Biryani</div><div class="photo-item-status missing">&#10007; Missing</div></div>
+      <div class="photo-item"><div class="photo-item-name">Prawn Saag</div><div class="photo-item-status has">&#10003; Photo</div></div>
+      <div class="photo-item"><div class="photo-item-name">Dal Makhani</div><div class="photo-item-status missing">&#10007; Missing</div></div>
+      <div class="photo-item"><div class="photo-item-name">Garlic Naan</div><div class="photo-item-status has">&#10003; Photo</div></div>
+      <div class="photo-item"><div class="photo-item-name">Peshwari Naan</div><div class="photo-item-status missing">&#10007; Missing</div></div>
+      <div class="photo-item"><div class="photo-item-name">Pilau Rice</div><div class="photo-item-status missing">&#10007; Missing</div></div>
+      <div class="photo-item"><div class="photo-item-name">Mango Lassi</div><div class="photo-item-status has">&#10003; Photo</div></div>
+      <div class="photo-item"><div class="photo-item-name">Mixed Starter</div><div class="photo-item-status has">&#10003; Photo</div></div>
+    </div>
+    <div class="photo-footer">&#9888; Priority: photograph Chicken Biryani, Lamb Biryani, and Vegetable Korma this week &mdash; your 3 most-searched items without a photo.</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-eyebrow">Order volume &mdash; last 7 days</div>
+  <div class="section-title">Your weekly trading pattern</div>
+  <div style="background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:24px 20px 16px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;">
+      <div>
+        <div style="font-size:28px;font-family:var(--serif);color:var(--ink);">312 <span style="font-size:14px;font-weight:400;color:var(--muted);">orders this week</span></div>
+        <div style="font-size:13px;color:var(--green);font-weight:600;margin-top:2px;">&#8593; 8% vs last week</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:13px;color:var(--muted);">Avg order value</div>
+        <div style="font-size:20px;font-family:var(--serif);color:var(--ink);">&pound;24.30</div>
+      </div>
+    </div>
+    <div class="pulse-chart">
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar low" style="height:28%;"><span class="pulse-val">28</span></div>
+        <div class="pulse-day">Mon</div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar low" style="height:32%;"><span class="pulse-val">32</span></div>
+        <div class="pulse-day">Tue</div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar" style="height:38%;"><span class="pulse-val">38</span></div>
+        <div class="pulse-day">Wed</div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar" style="height:46%;"><span class="pulse-val">46</span></div>
+        <div class="pulse-day">Thu</div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar peak" style="height:82%;"><span class="pulse-val">82</span></div>
+        <div class="pulse-day">Fri</div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar peak" style="height:100%;"><span class="pulse-val">98</span></div>
+        <div class="pulse-day">Sat</div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar" style="height:56%;"><span class="pulse-val">56</span></div>
+        <div class="pulse-day">Sun</div>
+      </div>
+    </div>
+    <div class="insight-note"><strong>PlateIQ insight:</strong> Your Monday&ndash;Wednesday volume is 34% below the area average for Indian cuisine. Consider a &ldquo;Midweek Meal Deal&rdquo; (main + rice + naan for &pound;18.99) Tuesday&ndash;Wednesday to capture the after-work crowd currently ordering from competitors.</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-eyebrow">Competitor analysis</div>
+  <div class="section-title">How you rank in Northern Quarter Indian</div>
+  <table class="comp-table">
+    <thead>
+      <tr><th>Rank</th><th>Restaurant</th><th>Score</th><th>Photos</th><th>Rating</th><th>Min order</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="comp-rank">#1</span></td><td><strong>Zouk</strong></td>
+        <td>94<div class="comp-mini-bar"><div class="comp-mini-fill" style="width:94%;background:var(--green);"></div></div></td>
+        <td style="color:var(--green);font-weight:600;">32/32 &#10003;</td><td>4.9 &#9733;</td><td>&pound;15</td>
+      </tr>
+      <tr>
+        <td><span class="comp-rank">#2</span></td><td><strong>Mughli</strong></td>
+        <td>88<div class="comp-mini-bar"><div class="comp-mini-fill" style="width:88%;background:var(--green);"></div></div></td>
+        <td style="color:var(--green);font-weight:600;">28/28 &#10003;</td><td>4.8 &#9733;</td><td>&pound;18</td>
+      </tr>
+      <tr>
+        <td><span class="comp-rank">#3</span></td><td><strong>Bundobust</strong></td>
+        <td>79<div class="comp-mini-bar"><div class="comp-mini-fill" style="width:79%;"></div></div></td>
+        <td style="color:var(--amber);font-weight:600;">19/26 &#9888;</td><td>4.7 &#9733;</td><td>&pound;20</td>
+      </tr>
+      <tr class="you">
+        <td><span class="comp-rank you">#4</span></td><td><strong>Spice Garden &larr; You</strong></td>
+        <td>71<div class="comp-mini-bar"><div class="comp-mini-fill" style="width:71%;"></div></div></td>
+        <td style="color:var(--red);font-weight:600;">8/24 &#10007;</td><td>4.6 &#9733;</td><td>&pound;18</td>
+      </tr>
+      <tr>
+        <td><span class="comp-rank">#5</span></td><td><strong>Akbar&rsquo;s</strong></td>
+        <td>68<div class="comp-mini-bar"><div class="comp-mini-fill" style="width:68%;"></div></div></td>
+        <td style="color:var(--amber);font-weight:600;">12/22 &#9888;</td><td>4.5 &#9733;</td><td>&pound;22</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="insight-note" style="margin-top:14px;"><strong>Gap to #1:</strong> Zouk&rsquo;s primary advantage is 100% photo coverage and a lower minimum order. Fix your photos and you close 15+ points of the gap immediately. Your rating is competitive &mdash; photos are the single biggest lever available to you right now.</div>
+</div>
+
+<div class="section">
+  <div class="section-eyebrow">Your action plan</div>
+  <div class="section-title">What to do &mdash; and when</div>
+
+  <div class="week-group">
+    <div class="week-label">This week &mdash; highest impact</div>
+    <div class="action-list">
+      <div class="action-item">
+        <div class="action-cb"></div>
+        <div class="action-text">Photograph and upload images for Chicken Biryani, Lamb Biryani, Vegetable Korma, Dal Makhani &mdash; your 4 most-viewed items without photos</div>
+        <span class="action-tag tag-quick">Quick win</span>
+      </div>
+      <div class="action-item">
+        <div class="action-cb"></div>
+        <div class="action-text">Respond to the 3 unanswered reviews from this week &mdash; each one that goes unanswered costs you ranking points with the algorithm</div>
+        <span class="action-tag tag-quick">Quick win</span>
+      </div>
+      <div class="action-item">
+        <div class="action-cb"></div>
+        <div class="action-text">Create a &ldquo;Midweek Meal Deal&rdquo; bundle on Uber Eats: any main + rice + garlic naan for &pound;18.99 &mdash; run Tuesday and Wednesday to target your soft trading days</div>
+        <span class="action-tag tag-week">This week</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="week-group">
+    <div class="week-label">Next 2 weeks</div>
+    <div class="action-list">
+      <div class="action-item">
+        <div class="action-cb"></div>
+        <div class="action-text">Restructure &ldquo;Extras&rdquo; into &ldquo;Sides &amp; Rice&rdquo;, &ldquo;Breads&rdquo;, and &ldquo;Drinks&rdquo; &mdash; increases add-ons by 12&ndash;18% on average</div>
+        <span class="action-tag tag-week">2 weeks</span>
+      </div>
+      <div class="action-item">
+        <div class="action-cb"></div>
+        <div class="action-text">Add descriptions to your 8 highest-price mains &mdash; include key ingredients and heat level. Customers who read descriptions convert 22% more often</div>
+        <span class="action-tag tag-week">2 weeks</span>
+      </div>
+      <div class="action-item">
+        <div class="action-cb"></div>
+        <div class="action-text">Fix the &pound;1.50 price discrepancy on Lamb Rogan Josh between Uber Eats and Just Eat &mdash; this may be triggering a platform de-ranking flag</div>
+        <span class="action-tag tag-week">2 weeks</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="week-group">
+    <div class="week-label">This month</div>
+    <div class="action-list">
+      <div class="action-item">
+        <div class="action-cb"></div>
+        <div class="action-text">Plan a seasonal promotional menu for August &mdash; Indian restaurants that run timely promotions see 35&ndash;60% order uplift during peak periods in Manchester</div>
+        <span class="action-tag tag-month">Month</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cta-banner">
+  <div>
+    <div class="cta-title">We&rsquo;ll implement all of this for you.</div>
+    <div class="cta-sub">On the Growth plan, our team logs into your Uber Eats and Just Eat accounts and makes every change on this list &mdash; every week. You focus on the kitchen.</div>
+  </div>
+  <button class="cta-btn">See plans &rarr;</button>
+</div>
+
+</div>
+  </div>
+</div>
+
+<script>
+// ── Platform pills toggle
+function togglePlatform(btn) {
+  btn.classList.toggle('active');
+}
+
+// ── Exclusivity toggle
+var exclusivity = 'no';
 function setExcl(btn, val) {
   exclusivity = val;
   document.querySelectorAll('.excl-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
 }
 
-function showError(msg){ var e=document.getElementById('formError'); e.textContent=msg; e.style.display='block'; }
-function clearError(){ document.getElementById('formError').style.display='none'; }
+// ── Form error
+function showError(msg) { var el = document.getElementById('formError'); if(el){el.textContent=msg;el.style.display='block';} }
+function clearError()   { var el = document.getElementById('formError'); if(el) el.style.display='none'; }
 
-function animateLoading() {
-  var steps=['ls1','ls2','ls3','ls4'];
-  var delays=[0,4000,9000,15000];
-  var pcts=[10,35,65,90];
-  var pf=document.getElementById('pf');
-  steps.forEach(function(id,i){
-    setTimeout(function(){
-      if(i>0){var p=document.getElementById(steps[i-1]);if(p){p.classList.remove('active');p.classList.add('done');}}
-      var el=document.getElementById(id);if(el)el.classList.add('active');
-      if(pf)pf.style.width=pcts[i]+'%';
-    },delays[i]);
+// ── Loading steps
+function animateSteps() {
+  var steps = ['step1','step2','step3','step4'];
+  var delays = [0, 1000, 2000, 3000];
+  var bar = document.getElementById('loadingBar');
+  var pcts = [15, 40, 70, 92];
+  pcts.forEach(function(p, i) { setTimeout(function() { if(bar) bar.style.width = p + '%'; }, delays[i]); });
+  steps.forEach(function(id, i) {
+    setTimeout(function() {
+      if (i > 0) {
+        var prev = document.getElementById(steps[i-1]);
+        if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
+      }
+      var el = document.getElementById(id);
+      if (el) el.classList.add('active');
+    }, delays[i]);
   });
 }
 
-async function submitInterest() {
+// ── Main audit function — DEMO MODE
+async function runAudit() {
   clearError();
-  var name      = document.getElementById('restaurantName').value.trim();
-  var postcode  = document.getElementById('postcode').value.trim();
-  var url       = document.getElementById('url').value.trim();
-  var email     = document.getElementById('email').value.trim();
-  var cuisine   = document.getElementById('cuisine').value;
-  var platforms = Array.from(document.querySelectorAll('.platform-pill.active')).map(function(b){return b.dataset.p;}).join(', ');
+  var name   = (document.getElementById('restaurantName') || {}).value || '';
+  var city   = (document.getElementById('restaurantCity') || {}).value || '';
+  var email  = (document.getElementById('ownerEmail') || {}).value || '';
+  var url    = (document.getElementById('restaurantUrl') || {}).value || '';
 
-  if (!url)                           return showError('Please paste your listing URL.');
-  if (!name)                          return showError('Please enter your restaurant name.');
-  if (!postcode)                      return showError('Please enter your postcode.');
-  if (!email||!email.includes('@'))   return showError('Please enter a valid email address.');
-  if (!platforms)                     return showError('Please select at least one platform.');
+  if (!name)  { showError('Please enter your restaurant name.'); return; }
+  if (!city)  { showError('Please enter your city or area.'); return; }
+  if (!email || !email.includes('@')) { showError('Please enter a valid email address.'); return; }
+  if (!url)   { showError('Please paste your restaurant listing URL.'); return; }
 
-  var btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  document.getElementById('submitLabel').textContent = 'Analysing...';
-  var sp=document.getElementById('spinner'); if(sp) sp.style.display='block';
-  document.getElementById('loadingOverlay').style.display = 'flex';
-  animateLoading();
+  // Show loading
+  var submitBtn = document.getElementById('submitBtn');
+  var submitLabel = document.getElementById('submitLabel');
+  var submitSpinner = document.getElementById('submitSpinner');
+  if (submitBtn)    submitBtn.disabled = true;
+  if (submitLabel)  submitLabel.textContent = 'Analysing...';
+  if (submitSpinner) submitSpinner.classList.remove('hidden');
+  // Show loading overlay — form stays visible but blurred behind
+  var ls = document.getElementById('loadingSection');
+  ls.classList.remove('hidden'); ls.style.display = 'flex';
+  animateSteps();
 
-  try {
-    var res = await fetch('/api/analyse', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ restaurantName:name, postcode:postcode, url:url, cuisine:cuisine, platforms:platforms, exclusive:exclusivity, email:email })
-    });
-    var data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Analysis failed.');
-
+  // Call the real API
+  var platforms = Array.from(document.querySelectorAll('.platform-pill.active')).map(function(b){ return b.dataset.platform; }).join(', ');
+  fetch('/api/analyse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      restaurantName: name,
+      city: city,
+      url: url,
+      cuisine: (document.getElementById('cuisineType') || {}).value || '',
+      platforms: platforms,
+      exclusive: exclusivity,
+      email: email
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    var ls = document.getElementById('loadingSection');
+    ls.classList.add('hidden'); ls.style.display = '';
+    if (submitBtn)    submitBtn.disabled = false;
+    if (submitLabel)  submitLabel.textContent = 'Get my free audit →';
+    if (submitSpinner) submitSpinner.classList.add('hidden');
+    if (!data.ok) { showError(data.error || 'Analysis failed. Please try again.'); return; }
     sessionStorage.setItem('piq_snapshot', JSON.stringify(data));
     sessionStorage.setItem('piq_email', email);
-    try { localStorage.setItem('piq_interest', JSON.stringify({restaurantName:name, postcode:postcode, cuisine:cuisine, platforms:platforms, email:email, exclusive:exclusivity})); } catch(e){}
-
+    try { localStorage.setItem('piq_interest', JSON.stringify({restaurantName:name, postcode:city, cuisine:(document.getElementById('cuisineType')||{}).value||'', platforms:platforms, email:email, exclusive:exclusivity})); } catch(e){}
     window.location.href = '/results';
-  } catch(err) {
-    document.getElementById('loadingOverlay').style.display = 'none';
-    btn.disabled = false;
-    document.getElementById('submitLabel').textContent = 'Get my free snapshot →';
-    var sp2=document.getElementById('spinner'); if(sp2) sp2.style.display='none';
-    showError(err.message || 'Something went wrong. Please try again.');
-  }
+  })
+  .catch(function(err) {
+    var ls = document.getElementById('loadingSection');
+    ls.classList.add('hidden'); ls.style.display = '';
+    if (submitBtn)    submitBtn.disabled = false;
+    if (submitLabel)  submitLabel.textContent = 'Get my free audit →';
+    if (submitSpinner) submitSpinner.classList.add('hidden');
+    showError('Something went wrong. Please try again.');
+  });
 }
+
+// ── Preview card animations ───────────────────────────────────────────────────
+(function() {
+  if (!('IntersectionObserver' in window)) return;
+
+  var cards = document.querySelectorAll('.report-card-preview');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (!entry.isIntersecting) return;
+      var card = entry.target;
+      var delay = parseInt(card.dataset.delay || 0);
+      setTimeout(function() {
+        card.classList.add('visible');
+        // Animate bars inside this card
+        card.querySelectorAll('.rcp-bar-fill').forEach(function(bar) {
+          bar.style.width = (bar.dataset.w || 0) + '%';
+        });
+      }, delay);
+      observer.unobserve(card);
+    });
+  }, { threshold: 0.2 });
+
+  cards.forEach(function(card) { observer.observe(card); });
+})();
 </script>
 </body>
 </html>
