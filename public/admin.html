@@ -292,62 +292,8 @@ function openDataModal(restId, restName) {
   document.getElementById('saveDataMsg').style.display = 'none';
   document.getElementById('genReportMsg').style.display = 'none';
   document.getElementById('dataModal').classList.add('open');
-  loadPreviousData(restId);
 }
 
-function loadPreviousData(restId) {
-  var el = document.getElementById('previousDataList');
-  if (!el) return;
-  el.textContent = 'Loading...';
-  fetch('/api/admin/client-history/' + restId, { headers: { 'x-admin-password': adminPw } })
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
-      if (!d.ok || !d.history || !d.history.length) {
-        el.textContent = 'No data entered yet.';
-        return;
-      }
-      el.innerHTML = d.history.map(function(h) {
-        var audit = h.listing_audit || {};
-        var hasReport = !!h.report_data;
-        return '<div style="background:var(--bg);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
-            '<strong>w/e ' + new Date(h.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) + '</strong>' +
-            '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:'+(hasReport?'var(--green-p)':'var(--amber-p)')+';color:'+(hasReport?'var(--green)':'var(--amber-d)')+';">' + (hasReport?'Report generated':'Data only') + '</span>' +
-          '</div>' +
-          '<div style="font-size:12px;color:var(--muted);">' +
-            h.orders + ' orders &middot; &pound;' + Number(h.revenue||0).toFixed(2) + ' revenue &middot; AOV &pound;' + Number(h.aov||0).toFixed(2) + ' &middot; Rating ' + (h.rating||'-') +
-          '</div>' +
-          (audit.photoItems && audit.totalItems ? '<div style="font-size:11.5px;color:var(--muted-l);margin-top:2px;">Photos: ' + audit.photoItems + '/' + audit.totalItems + ' &middot; ' + (audit.promotion||'No promo') + '</div>' : '') +
-        '</div>';
-      }).join('');
-    })
-    .catch(function(){ el.textContent = 'Could not load history.'; });
-}
-
-
-function loadPreviousData(restId) {
-  var list = document.getElementById('prevDataList');
-  if (!list) return;
-  list.textContent = 'Loading...';
-  fetch('/api/admin/client-history/' + restId, { headers: { 'x-admin-password': adminPw } })
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
-      if (!d.ok || !d.history || !d.history.length) { list.textContent = 'No previous entries yet.'; return; }
-      list.innerHTML = d.history.map(function(h) {
-        var a = h.listing_audit || {};
-        var photos = (a.photoItems && a.totalItems) ? a.photoItems+'/'+a.totalItems+' photos' : '';
-        return '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;">' +
-          '<div>' +
-            '<div style="font-weight:600;color:var(--ink);">w/e '+new Date(h.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div>' +
-            '<div style="color:var(--muted);font-size:11.5px;">'+h.orders+' orders &middot; &pound;'+Number(h.revenue).toFixed(2)+' &middot; AOV &pound;'+Number(h.aov).toFixed(2)+' &middot; '+h.rating+'★'+(photos?' &middot; '+photos:'')+'</div>' +
-            (h.notes?'<div style="font-size:11px;color:var(--muted-l);font-style:italic;">'+h.notes+'</div>':'') +
-          '</div>' +
-          '<span style="font-size:11px;padding:2px 8px;border-radius:99px;white-space:nowrap;background:'+(h.report_data?'var(--green-p)':'var(--bg)')+';color:'+(h.report_data?'var(--green)':'var(--muted)')+';">'+(h.report_data?'✓ Report':'No report')+'</span>' +
-        '</div>';
-      }).join('');
-    })
-    .catch(function(){ list.textContent = 'Could not load.'; });
-}
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
