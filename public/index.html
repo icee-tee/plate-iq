@@ -559,8 +559,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
         <input type="text" id="restaurantName" placeholder="e.g. Spice Garden" />
       </div>
       <div class="f-group">
-        <label>City / area <span style="color:#dc2626;">*</span></label>
-        <input type="text" id="restaurantCity" placeholder="e.g. Manchester" />
+        <label>Postcode <span style="color:#dc2626;">*</span></label>
+        <input type="text" id="restaurantCity" placeholder="e.g. M1 1AE" />
       </div>
     </div>
     <div class="f-group">
@@ -1288,7 +1288,7 @@ async function runAudit() {
   var url    = (document.getElementById('restaurantUrl') || {}).value || '';
 
   if (!name)  { showError('Please enter your restaurant name.'); return; }
-  if (!city)  { showError('Please enter your city or area.'); return; }
+  if (!city)  { showError('Please enter your postcode.'); return; }
   if (!email || !email.includes('@')) { showError('Please enter a valid email address.'); return; }
   if (!url)   { showError('Please paste your restaurant listing URL.'); return; }
 
@@ -1311,7 +1311,7 @@ async function runAudit() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       restaurantName: name,
-      city: city,
+      postcode: city, city: city,
       url: url,
       cuisine: (document.getElementById('cuisineType') || {}).value || '',
       platforms: platforms,
