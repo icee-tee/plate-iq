@@ -284,22 +284,33 @@ function buildPage(d) {
   document.getElementById('dashMeta').textContent = [d.postcode, d.cuisine, d.platforms].filter(Boolean).join(' · ');
   document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
 
-  // Metric cards — show score and dimensions as "metrics"
+  // Show 4 metric cards — blur the dimension ones that are zero/unreliable
   var dims = r.dimensions || {};
-  var cards = [
-    { label: 'Snapshot score',    value: (r.score || 0) + '/100',                  delta: r.scoreLabel || '' },
-    { label: 'Photo coverage',    value: (dims.photoScore || 0).toFixed(1) + '/10', delta: dims.photoScore >= 7 ? 'Good' : 'Needs work' },
-    { label: 'Menu structure',    value: (dims.menuScore  || 0).toFixed(1) + '/10', delta: dims.menuScore  >= 7 ? 'Good' : 'Needs work' },
-    { label: 'Platform visibility', value: (dims.visibilityScore || 0).toFixed(1) + '/10', delta: dims.visibilityScore >= 7 ? 'Good' : 'Needs work' },
-  ];
+  var score = r.score || 0;
+  var scoreColor = score >= 70 ? '#16a34a' : score >= 55 ? '#e8a020' : '#dc2626';
 
-  document.getElementById('metricGrid').innerHTML = cards.map(function(c) {
-    return '<div class="metric-card">' +
-      '<div class="metric-label">' + c.label + '</div>' +
-      '<div class="metric-value">' + c.value + '</div>' +
-      '<div class="metric-delta">' + c.delta + '</div>' +
+  function metricCard(label, value, sub, isBlurred) {
+    var blurStyle = isBlurred ? 'filter:blur(5px);user-select:none;pointer-events:none;' : '';
+    var lockBadge = isBlurred ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:var(--r-lg);"><span style="font-size:11px;font-weight:700;background:var(--card);border:1px solid var(--border-m);padding:4px 12px;border-radius:99px;color:var(--muted);">&#128274; Paid</span></div>' : '';
+    return '<div class="metric-card" style="position:relative;">' +
+      '<div style="' + blurStyle + '">' +
+        '<div class="metric-label">' + label + '</div>' +
+        '<div style="font-family:var(--serif);font-size:26px;color:var(--ink);line-height:1;margin:6px 0 4px;">' + value + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + sub + '</div>' +
+      '</div>' +
+      lockBadge +
     '</div>';
-  }).join('');
+  }
+
+  var photoScore  = dims.photoScore  || 0;
+  var menuScore   = dims.menuScore   || 0;
+  var visScore    = dims.visibilityScore || 0;
+
+  document.getElementById('metricGrid').innerHTML =
+    metricCard('Snapshot score', score + '/100', r.scoreLabel || '', false) +
+    metricCard('Photo coverage',    (photoScore ? photoScore.toFixed(1) : '?') + '/10', photoScore >= 7 ? 'Good' : photoScore > 0 ? 'Needs work' : 'Unlock to see', !photoScore) +
+    metricCard('Menu structure',    (menuScore  ? menuScore.toFixed(1)  : '?') + '/10', menuScore  >= 7 ? 'Good' : menuScore  > 0 ? 'Needs work' : 'Unlock to see', !menuScore) +
+    metricCard('Platform visibility',(visScore  ? visScore.toFixed(1)   : '?') + '/10', visScore   >= 7 ? 'Good' : visScore   > 0 ? 'Needs work' : 'Unlock to see', !visScore);
 
   // Free insights
   document.getElementById('insightCards').innerHTML =
