@@ -196,17 +196,15 @@ function renderChecklist(containerId, thisWeek, longerTerm, weekEnding, plan) {
       '<div class="chk-box">' + (done ? '\u2713' : '') + '</div>' +
       '<div class="chk-text">' + text + '</div>' +
       '<span class="chk-tag ' + tagCls + '">' + tagText + '</span>';
-    if (isSelf) {
-      div.addEventListener('click', function() {
-        var nowDone = !this.classList.contains('ticked');
-        this.classList.toggle('ticked', nowDone);
-        this.querySelector('.chk-box').innerHTML = nowDone ? '\u2713' : '';
-        var s = {};
-        try { s = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
-        if (nowDone) s[this.id] = 1; else delete s[this.id];
-        try { localStorage.setItem(key, JSON.stringify(s)); } catch(e){}
-      });
-    }
+    div.addEventListener('click', function() {
+      var nowDone = !this.classList.contains('ticked');
+      this.classList.toggle('ticked', nowDone);
+      this.querySelector('.chk-box').innerHTML = nowDone ? '\u2713' : '';
+      var s = {};
+      try { s = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
+      if (nowDone) s[this.id] = 1; else delete s[this.id];
+      try { localStorage.setItem(key, JSON.stringify(s)); } catch(e){}
+    });
     return div;
   }
 
@@ -214,9 +212,9 @@ function renderChecklist(containerId, thisWeek, longerTerm, weekEnding, plan) {
   if (thisWeek.length) {
     var lbl1 = document.createElement('div');
     lbl1.className = 'section-lbl';
-    lbl1.textContent = isSelf ? 'Your actions this week' : 'In progress this week';
+    lbl1.textContent = 'This week';
     el.appendChild(lbl1);
-    thisWeek.forEach(function(a){ el.appendChild(makeItem(a, isSelf?'To do':'In progress', 'tag-now')); });
+    thisWeek.forEach(function(a){ el.appendChild(makeItem(a, 'To do', 'tag-now')); });
   }
   if (longerTerm.length) {
     var lbl2 = document.createElement('div');
@@ -371,8 +369,8 @@ function buildReportView(data) {
           '<div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">'+(rep.summary||'')+'</div>' +
           insightsHtml + '</div>' : '') +
         '<div class="card">' +
-          '<div class="card-title">'+(plan==='starter'?'Your action checklist':'What we are working on')+'</div>' +
-          '<div class="card-sub">'+(plan==='starter'?'Tick off as you go':'Our team is handling these this week')+'</div>' +
+          '<div class="card-title">'+'Action checklist'+'</div>' +
+          '<div class="card-sub">'+'Tick off as you or our team complete each action'+'</div>' +
           '<div id="chkContainer"></div>' +
         '</div>' +
         '<div class="card">' +
