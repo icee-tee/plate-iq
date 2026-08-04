@@ -169,11 +169,15 @@ tr:hover td{background:var(--bg);}
     <div class="f-group"><label>What you noticed / competitor intel</label><input type="text" id="dm-noticed" placeholder="e.g. Top competitor dropped min order to £12, we should match"></div>
     <div class="f-group"><label>Any other notes for the report</label><input type="text" id="dm-notes" placeholder="e.g. Ran 20% off promo Tue-Wed, orders spiked Friday"></div>
     <button class="btn-primary" onclick="saveData()" id="saveDataBtn">Save data</button>
-    <div id="saveDataMsg" style="display:none;"></div>
+    <div id="saveDataMsg" style="display:none;" class="msg"></div>
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;">After saving data, generate the AI report:</div>
       <button class="btn-primary" onclick="generateReport()" id="genReportBtn" style="background:var(--amber);color:var(--ink);">Generate AI report</button>
-      <div id="genReportMsg" style="display:none;margin-top:8px;"></div>
+      <div id="genReportMsg" style="display:none;margin-top:8px;" class="msg"></div>
+    </div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;">Previous data entered:</div>
+      <div id="previousDataList" style="font-size:12.5px;color:var(--muted);">Loading...</div>
     </div>
   </div>
 </div>
@@ -283,11 +287,66 @@ function openDataModal(restId, restName) {
   d.setDate(d.getDate() - d.getDay());
   document.getElementById('dm-week').value = d.toISOString().split('T')[0];
   ['dm-orders','dm-revenue','dm-aov','dm-rating','dm-reviews','dm-unanswered','dm-total-items','dm-photo-items','dm-header-photo','dm-descriptions','dm-promotion','dm-categories','dm-featured','dm-ranking','dm-changed','dm-noticed','dm-notes'].forEach(function(id){
-    document.getElementById(id).value = '';
+    var el = document.getElementById(id); if(el) el.value = '';
   });
   document.getElementById('saveDataMsg').style.display = 'none';
   document.getElementById('genReportMsg').style.display = 'none';
   document.getElementById('dataModal').classList.add('open');
+  loadPreviousData(restId);
+}
+
+function loadPreviousData(restId) {
+  var el = document.getElementById('previousDataList');
+  if (!el) return;
+  el.textContent = 'Loading...';
+  fetch('/api/admin/client-history/' + restId, { headers: { 'x-admin-password': adminPw } })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (!d.ok || !d.history || !d.history.length) {
+        el.textContent = 'No data entered yet.';
+        return;
+      }
+      el.innerHTML = d.history.map(function(h) {
+        var audit = h.listing_audit || {};
+        var hasReport = !!h.report_data;
+        return '<div style="background:var(--bg);border-radius:var(--r);padding:10px 14px;margin-bottom:8px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+            '<strong>w/e ' + new Date(h.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) + '</strong>' +
+            '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:'+(hasReport?'var(--green-p)':'var(--amber-p)')+';color:'+(hasReport?'var(--green)':'var(--amber-d)')+';">' + (hasReport?'Report generated':'Data only') + '</span>' +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--muted);">' +
+            h.orders + ' orders &middot; &pound;' + Number(h.revenue||0).toFixed(2) + ' revenue &middot; AOV &pound;' + Number(h.aov||0).toFixed(2) + ' &middot; Rating ' + (h.rating||'-') +
+          '</div>' +
+          (audit.photoItems && audit.totalItems ? '<div style="font-size:11.5px;color:var(--muted-l);margin-top:2px;">Photos: ' + audit.photoItems + '/' + audit.totalItems + ' &middot; ' + (audit.promotion||'No promo') + '</div>' : '') +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){ el.textContent = 'Could not load history.'; });
+}
+
+
+function loadPreviousData(restId) {
+  var list = document.getElementById('prevDataList');
+  if (!list) return;
+  list.textContent = 'Loading...';
+  fetch('/api/admin/client-history/' + restId, { headers: { 'x-admin-password': adminPw } })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (!d.ok || !d.history || !d.history.length) { list.textContent = 'No previous entries yet.'; return; }
+      list.innerHTML = d.history.map(function(h) {
+        var a = h.listing_audit || {};
+        var photos = (a.photoItems && a.totalItems) ? a.photoItems+'/'+a.totalItems+' photos' : '';
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;">' +
+          '<div>' +
+            '<div style="font-weight:600;color:var(--ink);">w/e '+new Date(h.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div>' +
+            '<div style="color:var(--muted);font-size:11.5px;">'+h.orders+' orders &middot; &pound;'+Number(h.revenue).toFixed(2)+' &middot; AOV &pound;'+Number(h.aov).toFixed(2)+' &middot; '+h.rating+'★'+(photos?' &middot; '+photos:'')+'</div>' +
+            (h.notes?'<div style="font-size:11px;color:var(--muted-l);font-style:italic;">'+h.notes+'</div>':'') +
+          '</div>' +
+          '<span style="font-size:11px;padding:2px 8px;border-radius:99px;white-space:nowrap;background:'+(h.report_data?'var(--green-p)':'var(--bg)')+';color:'+(h.report_data?'var(--green)':'var(--muted)')+';">'+(h.report_data?'✓ Report':'No report')+'</span>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){ list.textContent = 'Could not load.'; });
 }
 
 function closeModal(id) {
