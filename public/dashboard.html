@@ -4,108 +4,127 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Dashboard - PlateIQ</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{--ink:#1a1a1a;--ink-s:#3d3d3d;--muted:#6b6b6b;--muted-l:#a0a0a0;--bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-d:#c47f0a;--amber-p:#fef3dc;--red:#dc2626;--red-p:#fef2f2;--green:#16a34a;--green-p:#f0fdf4;--border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);--r:10px;--r-lg:18px;--serif:"DM Serif Display",Georgia,serif;--sans:"Plus Jakarta Sans",system-ui,sans-serif;}
+:root{
+  --ink:#1a1a1a;--ink-s:#3d3d3d;--muted:#6b6b6b;--muted-l:#a0a0a0;
+  --bg:#faf8f4;--card:#fff;--amber:#e8a020;--amber-d:#c47f0a;--amber-p:#fef3dc;
+  --red:#dc2626;--red-p:#fef2f2;--green:#16a34a;--green-p:#f0fdf4;
+  --border:rgba(26,26,26,.1);--border-m:rgba(26,26,26,.16);
+  --r:10px;--r-lg:18px;
+  --serif:"DM Serif Display",Georgia,serif;
+  --sans:"Plus Jakarta Sans",system-ui,sans-serif;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;}
+
 /* Nav */
-nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;width:100%;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
 .brand{font-family:var(--serif);font-size:20px;color:var(--ink);}
 .brand span{color:var(--amber);}
 .nav-links{display:flex;align-items:center;gap:4px;}
-.nav-link{font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:var(--r);transition:all .12s;}
-.nav-link:hover,.nav-link.active{color:var(--ink);background:var(--bg);}
-.nav-right{display:flex;align-items:center;gap:12px;}
-.nav-email{font-size:12.5px;color:var(--muted);}
-.btn-logout{font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 10px;}
-/* Layout */
-.wrap{max-width:1280px;margin:0 auto;padding:36px 40px 80px;width:100%;}
+.nav-link{font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:var(--r);cursor:pointer;border:none;background:none;}
+.nav-link.active,.nav-link:hover{color:var(--ink);background:var(--bg);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-email{font-size:12px;color:var(--muted);}
+.btn-logout{font-size:12px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;}
+
+/* Page wrapper — full width */
+.page{padding:32px 40px 80px;width:100%;}
+.inner{width:100%;}
+
 /* Header */
-.dash-header{margin-bottom:32px;}
-.dash-title{font-family:var(--serif);font-size:clamp(22px,3vw,32px);color:var(--ink);margin-bottom:4px;}
-.dash-sub{font-size:13.5px;color:var(--muted);}
-.report-week{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-top:4px;}
-/* Metric cards */
-.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
-.metric-card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:18px;}
+.dash-title{font-family:var(--serif);font-size:28px;color:var(--ink);margin-bottom:2px;}
+.dash-sub{font-size:13px;color:var(--muted);}
+.dash-week{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-top:4px;margin-bottom:24px;}
+
+/* Week selector */
+.week-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+.week-btn{font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:99px;border:1.5px solid var(--border-m);background:var(--card);color:var(--muted);cursor:pointer;}
+.week-btn.active{background:var(--amber);border-color:var(--amber);color:var(--ink);}
+
+/* Metric cards — 4 col, full width */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.metric-card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:18px 20px;}
 .metric-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-l);margin-bottom:8px;}
 .metric-value{font-family:var(--serif);font-size:28px;color:var(--ink);line-height:1;}
-.metric-delta{font-size:12px;font-weight:600;margin-top:6px;}
-.delta-up{color:var(--green);}
-.delta-down{color:var(--red);}
-.delta-flat{color:var(--muted);}
-/* Two-col layout */
-.main-col{width:100%;min-width:0;}
-.card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:22px;}
+.metric-delta{font-size:12px;font-weight:600;margin-top:5px;}
+.up{color:var(--green);} .down{color:var(--red);} .flat{color:var(--muted);}
+
+/* Chart card — full width */
+.chart-card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;margin-bottom:20px;}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.chart-title{font-family:var(--serif);font-size:16px;color:var(--ink);}
+.chart-tabs{display:flex;gap:4px;}
+.chart-tab{font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px;border:1.5px solid var(--border-m);background:transparent;color:var(--muted);cursor:pointer;transition:all .12s;}
+.chart-tab.active{background:var(--amber);border-color:var(--amber);color:var(--ink);}
+.chart-container{position:relative;height:160px;width:100%;}
+
+/* Two column below chart */
+.two-col{display:grid;grid-template-columns:1fr 320px;gap:16px;}
+.card{background:var(--card);border:1px solid var(--border-m);border-radius:var(--r-lg);padding:20px;margin-bottom:16px;}
 .card-title{font-family:var(--serif);font-size:17px;color:var(--ink);margin-bottom:4px;}
-.card-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
-/* Chart */
-.pulse-chart{display:flex;align-items:flex-end;gap:6px;height:80px;margin-bottom:12px;}
-.pulse-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;}
-.pulse-bar{width:100%;border-radius:3px 3px 0 0;background:var(--amber);position:relative;min-height:3px;transition:opacity .15s;}
-.pulse-bar:hover{opacity:.8;}
-.pulse-bar.low{background:var(--border-m);}
-.pulse-bar.peak{box-shadow:0 0 0 2px var(--amber-d);}
-.pulse-val{font-size:8px;font-weight:700;color:var(--muted);position:absolute;top:-12px;left:50%;transform:translateX(-50%);white-space:nowrap;}
-.pulse-day{font-size:9px;color:var(--muted-l);font-weight:600;}
-/* History */
-.history-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
-.history-item:last-child{border-bottom:none;}
-.history-item:hover .history-week{color:var(--amber);}
-.history-week{font-size:13px;font-weight:600;color:var(--ink);transition:color .12s;}
-.history-meta{font-size:12px;color:var(--muted);}
-.history-score{font-family:var(--serif);font-size:16px;color:var(--amber);}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+
 /* Insights */
 .alert{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--r);border-left:3px solid;margin-bottom:10px;}
 .alert.critical{background:var(--red-p);border-color:var(--red);}
 .alert.warning{background:var(--amber-p);border-color:var(--amber);}
 .alert.positive{background:var(--green-p);border-color:var(--green);}
-.alert-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.alert-icon{font-size:16px;flex-shrink:0;margin-top:2px;}
 .alert-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
 .alert-body{font-size:12.5px;color:var(--ink-s);line-height:1.5;}
+
 /* Checklist */
-.action-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--r);background:var(--bg);border:1px solid var(--border);margin-bottom:6px;}
-.action-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-m);flex-shrink:0;margin-top:1px;cursor:pointer;}
-.action-text{font-size:12.5px;color:var(--ink-s);flex:1;}
-.action-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;flex-shrink:0;}
-.tag-q{background:var(--green-p);color:var(--green);}
-.tag-w{background:var(--amber-p);color:var(--amber-d);}
-/* Week selector */
-.week-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
-.week-btn{font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:99px;border:1.5px solid var(--border-m);background:var(--card);color:var(--muted);cursor:pointer;transition:all .12s;}
-.week-btn.active{background:var(--amber);border-color:var(--amber);color:var(--ink);}
-/* Empty state */
-.empty{text-align:center;padding:60px 24px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);}
-.empty-icon{font-size:40px;margin-bottom:16px;}
-/* Account panel */
-.account-section{margin-bottom:20px;}
-.account-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
-.account-row:last-child{border-bottom:none;}
-.account-label{font-size:13px;font-weight:600;color:var(--ink);}
-.account-value{font-size:13px;color:var(--muted);}
+.section-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px;}
+.chk-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--r);background:var(--bg);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:background .1s;user-select:none;}
+.chk-item:hover{background:#f0ede8;}
+.chk-item.ticked{opacity:.65;}
+.chk-item.ticked .chk-box{background:var(--green);border-color:var(--green);}
+.chk-item.ticked .chk-text{text-decoration:line-through;color:var(--muted);}
+.chk-box{width:18px;height:18px;min-width:18px;border-radius:4px;border:2px solid var(--border-m);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;margin-top:1px;transition:all .1s;}
+.chk-text{font-size:13px;color:var(--ink-s);line-height:1.4;}
+.chk-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;margin-left:auto;white-space:nowrap;flex-shrink:0;}
+.tag-now{background:var(--green-p);color:var(--green);}
+.tag-soon{background:var(--amber-p);color:var(--amber-d);}
+
+/* History sidebar */
+.history-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.history-row:last-child{border-bottom:none;}
+.history-row:hover .hw{color:var(--amber);}
+.hw{font-size:13px;font-weight:600;color:var(--ink);transition:color .12s;}
+.hm{font-size:11.5px;color:var(--muted);}
+
+/* Contact */
+.contact-textarea{width:100%;font-family:var(--sans);font-size:13.5px;border:1.5px solid var(--border-m);border-radius:var(--r);padding:10px 14px;resize:vertical;min-height:80px;background:var(--bg);color:var(--ink);outline:none;}
+.contact-textarea:focus{border-color:var(--amber);background:#fff;}
+.btn-send{font-family:var(--sans);font-size:13px;font-weight:700;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:9px 20px;cursor:pointer;margin-top:8px;}
+
+/* Account */
+.acct-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border);}
+.acct-row:last-child{border-bottom:none;}
+.acct-label{font-size:13px;font-weight:600;color:var(--ink);}
+.acct-val{font-size:13px;color:var(--muted);}
 .plan-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--amber-p);color:var(--amber-d);}
 .btn-sm{font-size:12px;font-weight:700;padding:6px 14px;border-radius:var(--r);border:1.5px solid var(--border-m);background:transparent;color:var(--ink);cursor:pointer;}
-.btn-sm.danger{border-color:rgba(220,38,38,.3);color:var(--red);}
-@media(min-width:1024px){.main-col{display:grid;grid-template-columns:1fr 340px;gap:20px;}}
-  @media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,1fr);}}
-  @media(max-width:480px){.metric-grid{grid-template-columns:1fr 1fr;}.wrap{padding:20px 16px;}}
-@media(max-width:600px){nav{padding:0 16px;}.wrap{padding:24px 16px;}.metric-grid{grid-template-columns:1fr 1fr;}}
+.btn-sm.red{border-color:rgba(220,38,38,.3);color:var(--red);}
 
-  /* Skeleton loading state */
-  .skeleton{background:linear-gradient(90deg,var(--border) 0%,rgba(26,26,26,.06) 50%,var(--border) 100%);background-size:200%;animation:shimmer 1.5s infinite;border-radius:var(--r);}
-  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-  .skel-text{height:14px;margin-bottom:8px;border-radius:4px;}
-  .skel-num{height:36px;width:80px;border-radius:var(--r);margin-bottom:8px;}
-  .skel-bar{height:60px;border-radius:var(--r);}
+/* Empty / skeleton */
+.empty{text-align:center;padding:60px 24px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);}
+@keyframes sk{0%,100%{opacity:1}50%{opacity:.4}}
+.sk{background:var(--border);border-radius:6px;animation:sk 1.5s ease-in-out infinite;}
 
+@media(max-width:1024px){.two-col{grid-template-columns:1fr;}}
+@media(max-width:768px){.metric-grid{grid-template-columns:repeat(2,1fr);}.page{padding:20px 16px;}.chart-header{flex-direction:column;align-items:flex-start;gap:8px;}nav{padding:0 16px;}}
+@media(max-width:480px){.metric-grid{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
 <body>
 <nav>
   <div class="brand">Plate<span>IQ</span></div>
   <div class="nav-links">
-    <a href="#" class="nav-link active" onclick="showView('report');return false;">Report</a>
-    <a href="#" class="nav-link" onclick="showView('account');return false;">Account</a>
+    <button class="nav-link active" id="tab-report"  onclick="showView('report')">Report</button>
+    <button class="nav-link"        id="tab-account" onclick="showView('account')">Account</button>
   </div>
   <div class="nav-right">
     <span class="nav-email" id="navEmail"></span>
@@ -113,162 +132,172 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
   </div>
 </nav>
 
-<div class="wrap" id="mainWrap">
-  <div id="loadingState" style="text-align:center;padding:80px;font-size:14px;color:var(--muted);">Loading your dashboard...</div>
-  <div id="reportView" style="display:none;"></div>
-  <div id="accountView" style="display:none;"></div>
+<div class="page">
+  <div class="inner" id="reportView"></div>
+  <div class="inner" id="accountView" style="display:none;"></div>
 </div>
 
-
 <script>
-var token = localStorage.getItem('piq_token');
-var email = localStorage.getItem('piq_email');
+var token    = localStorage.getItem('piq_token');
+var email    = localStorage.getItem('piq_email');
+var dashData = null;
+var weekIdx  = 0;
+var chartInst = null;
+
 if (!token) window.location.href = '/login';
 document.getElementById('navEmail').textContent = email || '';
 
-var dashData  = null;
-var weekIdx   = 0;
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function fmt(n)    { return Number(n||0).toLocaleString('en-GB'); }
-function fmtGBP(n) { return '\u00a3' + Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-
-function deltaHtml(val, isCurrency) {
-  var v = Number(val||0);
-  if (v === 0) return '<div class="metric-delta delta-flat">\u2192 No change</div>';
-  var cls  = v > 0 ? 'delta-up' : 'delta-down';
-  var arr  = v > 0 ? '\u2191' : '\u2193';
-  var disp = isCurrency ? fmtGBP(Math.abs(v)) : fmt(Math.abs(v));
-  return '<div class="metric-delta ' + cls + '">' + arr + ' ' + disp + ' vs last week</div>';
-}
-
 function logout() {
-  fetch('/api/logout',{method:'POST',headers:{'x-session-token':token}}).catch(()=>{});
-  localStorage.removeItem('piq_token');
-  localStorage.removeItem('piq_email');
+  fetch('/api/logout',{method:'POST',headers:{'x-session-token':token}});
+  localStorage.removeItem('piq_token'); localStorage.removeItem('piq_email');
   window.location.href = '/';
 }
 
 function showView(v) {
   document.getElementById('reportView').style.display  = v==='report'  ? 'block' : 'none';
   document.getElementById('accountView').style.display = v==='account' ? 'block' : 'none';
-  document.querySelectorAll('.nav-link').forEach(function(l,i){
-    l.classList.toggle('active', i===(v==='report'?0:1));
-  });
+  document.getElementById('tab-report').classList.toggle('active',  v==='report');
+  document.getElementById('tab-account').classList.toggle('active', v==='account');
 }
 
-// ── Trend chart ────────────────────────────────────────────────────────────────
-function buildTrendChart(history, metric) {
-  if (!history || history.length < 2) {
-    return '<div class="trend-chart-wrap"><div class="trend-chart-title">Performance trend</div>' +
-      '<div style="font-size:13px;color:var(--muted);padding:16px 0;">Chart will appear once you have 2+ weeks of data.</div></div>';
+function fmt(n)    { return Number(n||0).toLocaleString('en-GB'); }
+function fmtGBP(n) { return '\u00a3' + Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function deltaHtml(val, isCurrency) {
+  var v = Number(val||0);
+  if (!v) return '<div class="metric-delta flat">\u2192 No change</div>';
+  var cls = v>0 ? 'up' : 'down';
+  var arr = v>0 ? '\u2191' : '\u2193';
+  var str = isCurrency ? fmtGBP(Math.abs(v)) : fmt(Math.abs(v));
+  return '<div class="metric-delta '+cls+'">'+arr+' '+str+' vs last week</div>';
+}
+
+// ── Checklist ─────────────────────────────────────────────────────────────────
+function renderChecklist(containerId, thisWeek, longerTerm, weekEnding, plan) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var key     = 'piq_chk_' + String(weekEnding).replace(/[^0-9]/g,'');
+  var isSelf  = (!plan || plan === 'starter');
+  var saved   = {};
+  try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
+
+  if (!thisWeek.length && !longerTerm.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);">No actions for this week yet.</div>';
+    return;
   }
-  var data = history.slice(0,12).reverse();
-  var vals = data.map(function(w){ return Number(w[metric]||0); });
-  var maxV = Math.max.apply(null,vals)||1;
-  var tabLabels = {orders:'Orders',revenue:'Revenue',aov:'Avg order',rating:'Rating'};
-  var tabsHtml = Object.keys(tabLabels).map(function(t){
-    return '<button class="trend-tab'+(t===metric?' active':'')+'" onclick="switchChart(this,\'' + t + '\')">' + tabLabels[t] + '</button>';
-  }).join('');
-  var barsHtml = data.map(function(w){
-    var v   = Number(w[metric]||0);
-    var h   = Math.max(6, Math.round(v/maxV*100));
-    var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    var val = metric==='revenue' ? fmtGBP(v) : metric==='aov' ? fmtGBP(v) : fmt(v);
-    return '<div class="chart-bar-wrap"><div class="chart-val">'+val+'</div>' +
-      '<div class="chart-bar" style="height:'+h+'%"></div>' +
-      '<div class="chart-label">'+lbl+'</div></div>';
-  }).join('');
-  return '<div class="trend-chart-wrap" id="trendChart">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
-      '<div class="trend-chart-title">Performance trend</div>' +
-      '<div class="trend-tabs" id="trendTabs">' + tabsHtml + '</div>' +
+
+  function makeItem(text, tagText, tagCls) {
+    var id   = 'c' + text.replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+    var done = !!saved[id];
+    var div  = document.createElement('div');
+    div.className = 'chk-item' + (done ? ' ticked' : '');
+    div.id = id;
+    div.innerHTML =
+      '<div class="chk-box">' + (done ? '\u2713' : '') + '</div>' +
+      '<div class="chk-text">' + text + '</div>' +
+      '<span class="chk-tag ' + tagCls + '">' + tagText + '</span>';
+    if (isSelf) {
+      div.addEventListener('click', function() {
+        var nowDone = !this.classList.contains('ticked');
+        this.classList.toggle('ticked', nowDone);
+        this.querySelector('.chk-box').innerHTML = nowDone ? '\u2713' : '';
+        var s = {};
+        try { s = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
+        if (nowDone) s[this.id] = 1; else delete s[this.id];
+        try { localStorage.setItem(key, JSON.stringify(s)); } catch(e){}
+      });
+    }
+    return div;
+  }
+
+  el.innerHTML = '';
+  if (thisWeek.length) {
+    var lbl1 = document.createElement('div');
+    lbl1.className = 'section-lbl';
+    lbl1.textContent = isSelf ? 'Your actions this week' : 'In progress this week';
+    el.appendChild(lbl1);
+    thisWeek.forEach(function(a){ el.appendChild(makeItem(a, isSelf?'To do':'In progress', 'tag-now')); });
+  }
+  if (longerTerm.length) {
+    var lbl2 = document.createElement('div');
+    lbl2.className = 'section-lbl';
+    lbl2.style.marginTop = '12px';
+    lbl2.textContent = 'Coming up';
+    el.appendChild(lbl2);
+    longerTerm.forEach(function(a){ el.appendChild(makeItem(a, 'Soon', 'tag-soon')); });
+  }
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────────────
+function buildChart(history, metric) {
+  if (!history || history.length < 2) return '';
+  return '<div class="chart-card">' +
+    '<div class="chart-header">' +
+      '<div class="chart-title">Performance trend</div>' +
+      '<div class="chart-tabs">' +
+        ['orders','revenue','aov','rating'].map(function(m){
+          var labels = {orders:'Orders',revenue:'Revenue',aov:'Avg order',rating:'Rating'};
+          return '<button class="chart-tab'+(m===metric?' active':'')+'" onclick="switchMetric(this,\''+m+'\')">'+labels[m]+'</button>';
+        }).join('') +
+      '</div>' +
     '</div>' +
-    '<div class="chart-bars" id="chartBars">' + barsHtml + '</div>' +
+    '<div class="chart-container"><canvas id="perfChart"></canvas></div>' +
   '</div>';
 }
 
-function switchChart(btn, metric) {
-  document.querySelectorAll('.trend-tab').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  if (!dashData) return;
-  var history = dashData.history || [];
-  var data = history.slice(0,12).reverse();
-  var vals = data.map(function(w){ return Number(w[metric]||0); });
-  var maxV = Math.max.apply(null,vals)||1;
-  document.getElementById('chartBars').innerHTML = data.map(function(w){
-    var v   = Number(w[metric]||0);
-    var h   = Math.max(6, Math.round(v/maxV*100));
-    var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    var val = metric==='revenue'||metric==='aov' ? fmtGBP(v) : fmt(v);
-    return '<div class="chart-bar-wrap"><div class="chart-val">'+val+'</div>' +
-      '<div class="chart-bar" style="height:'+h+'%"></div>' +
-      '<div class="chart-label">'+lbl+'</div></div>';
-  }).join('');
-}
-
-// ── Checklist ──────────────────────────────────────────────────────────────────
-function renderChecklist(containerId, thisWeek, longerTerm, weekEnding, plan) {
-  var container = document.getElementById(containerId);
-  if (!container) return;
-  var key = 'piq_chk_' + weekEnding;
-  var saved = {};
-  try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
-  var isSelf = (!plan || plan === 'starter');
-  var html = '';
-
-  function makeItem(text, tag, tagCls) {
-    var id = 'c' + text.replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
-    var done = !!saved[id];
-    return '<div class="checklist-item' + (done?' done':'') + '" id="' + id + '" data-wkey="' + key + '">' +
-      '<div class="check-box">' + (done?'&#10003;':'') + '</div>' +
-      '<div class="check-text">' + text + '</div>' +
-      '<span class="check-tag ' + tagCls + '">' + tag + '</span>' +
-    '</div>';
-  }
-
-  if (thisWeek.length) {
-    html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">' +
-      (isSelf ? 'Do this week' : 'We are doing this') + '</div>';
-    html += thisWeek.map(function(a){ return makeItem(a, isSelf?'Action':'In progress', 'tag-now'); }).join('');
-  }
-  if (longerTerm.length) {
-    html += '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">Coming up</div>';
-    html += longerTerm.map(function(a){ return makeItem(a, '2-4 weeks', 'tag-week'); }).join('');
-  }
-
-  container.innerHTML = html;
-
-  // Wire up click handlers AFTER injecting HTML
-  container.querySelectorAll('.checklist-item').forEach(function(el) {
-    if (!isSelf) return; // managed plan = not clickable
-    el.style.cursor = 'pointer';
-    el.addEventListener('click', function() {
-      this.classList.toggle('done');
-      var id   = this.id;
-      var wkey = this.getAttribute('data-wkey');
-      var box  = this.querySelector('.check-box');
-      var sv   = {};
-      try { sv = JSON.parse(localStorage.getItem(wkey)||'{}'); } catch(e){}
-      if (this.classList.contains('done')) { sv[id]=true; box.innerHTML='&#10003;'; }
-      else { delete sv[id]; box.innerHTML=''; }
-      try { localStorage.setItem(wkey, JSON.stringify(sv)); } catch(e){}
-    });
+function drawChart(history, metric) {
+  var canvas = document.getElementById('perfChart');
+  if (!canvas) return;
+  var data   = history.slice(0,12).reverse();
+  var labels = data.map(function(w){ return new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); });
+  var vals   = data.map(function(w){ return Number(w[metric]||0); });
+  var isCurr = metric==='revenue'||metric==='aov';
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+  chartInst = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: 'rgba(232,160,32,.25)',
+        borderColor: '#e8a020',
+        borderWidth: 2,
+        borderRadius: 4,
+        hoverBackgroundColor: 'rgba(232,160,32,.5)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#a0a0a0' } },
+        y: { grid: { color: 'rgba(26,26,26,.06)' }, ticks: { font: { size: 11 }, color: '#a0a0a0',
+          callback: function(v){ return isCurr ? '\u00a3'+v : v; }
+        }, beginAtZero: false }
+      }
+    }
   });
 }
 
-// ── Main report render ─────────────────────────────────────────────────────────
-function buildReportView(data) {
-  var restaurant = data.restaurant;
-  var history    = data.history || [];
-  var plan       = data.user && data.user.plan;
+function switchMetric(btn, metric) {
+  document.querySelectorAll('.chart-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  if (dashData) drawChart(dashData.history||[], metric);
+}
 
-  if (!restaurant) {
+// ── Build report view ─────────────────────────────────────────────────────────
+function buildReportView(data) {
+  var rest    = data.restaurant;
+  var history = data.history || [];
+  var plan    = data.user && data.user.plan;
+
+  if (!rest) {
     document.getElementById('reportView').innerHTML =
-      '<div class="empty"><div class="empty-icon">&#128197;</div>' +
-      '<div style="font-family:var(--serif);font-size:20px;color:var(--ink);margin-bottom:8px;">Setup not complete</div>' +
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Complete your account setup to get started.</div>' +
-      '<a href="/onboarding" style="display:inline-block;font-family:var(--sans);font-size:13.5px;font-weight:700;background:var(--ink);color:#fff;text-decoration:none;border-radius:var(--r);padding:10px 22px;">Complete setup \u2192</a></div>';
+      '<div class="empty"><div style="font-size:36px;margin-bottom:16px;">\uD83D\uDCC5</div>' +
+      '<div style="font-family:var(--serif);font-size:22px;margin-bottom:8px;">Setup not complete</div>' +
+      '<div style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">Complete your account setup to get started.</div>' +
+      '<a href="/onboarding" style="display:inline-block;font-family:var(--sans);font-size:14px;font-weight:700;background:var(--ink);color:#fff;text-decoration:none;border-radius:var(--r);padding:11px 24px;">Complete setup \u2192</a></div>';
     return;
   }
 
@@ -278,13 +307,14 @@ function buildReportView(data) {
   var sc   = rep ? rep.scorecard : null;
 
   // Week selector
-  var weekSelector = history.length > 1 ? '<div class="week-selector">' +
+  var weekSel = history.length > 1 ?
+    '<div class="week-selector">' +
     history.map(function(w,i){
-      var lbl = 'w/e ' + new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-      return '<button class="week-btn'+(i===idx?' active':'')+'" onclick="selectWeek('+i+')">' + lbl + '</button>';
-    }).join('') + '</div>' : '';
+      var lbl = 'w/e '+new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      return '<button class="week-btn'+(i===idx?' active':'')+'" onclick="selectWeek('+i+')">'+lbl+'</button>';
+    }).join('')+'</div>' : '';
 
-  // Metric cards
+  // Metrics
   var metricsHtml = '';
   if (sc) {
     metricsHtml = '<div class="metric-grid">' +
@@ -294,19 +324,21 @@ function buildReportView(data) {
       '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+sc.rating.value+'</div>'+deltaHtml(sc.rating.delta,false)+'</div>' +
     '</div>';
   } else if (week.orders) {
-    // No report yet but we have raw data
     metricsHtml = '<div class="metric-grid">' +
-      '<div class="metric-card"><div class="metric-label">Orders</div><div class="metric-value">'+fmt(week.orders)+'</div><div class="metric-delta delta-flat">Data logged</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+fmtGBP(week.revenue)+'</div><div class="metric-delta delta-flat">Data logged</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Avg order value</div><div class="metric-value">'+fmtGBP(week.aov)+'</div><div class="metric-delta delta-flat">Data logged</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+(week.rating||'--')+'</div><div class="metric-delta delta-flat">Data logged</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Orders</div><div class="metric-value">'+fmt(week.orders)+'</div><div class="metric-delta flat">Logged</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+fmtGBP(week.revenue)+'</div><div class="metric-delta flat">Logged</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Avg order value</div><div class="metric-value">'+fmtGBP(week.aov)+'</div><div class="metric-delta flat">Logged</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+(week.rating||'--')+'</div><div class="metric-delta flat">Logged</div></div>' +
     '</div>';
   }
+
+  // Chart
+  var chartHtml = buildChart(history, 'orders');
 
   // Insights
   var insightsHtml = '';
   if (rep && rep.insights) {
-    insightsHtml = (rep.insights||[]).map(function(ins){
+    insightsHtml = rep.insights.map(function(ins){
       return '<div class="alert '+(ins.type||'warning')+'">' +
         '<div class="alert-icon">'+(ins.icon||'')+'</div>' +
         '<div><div class="alert-title">'+ins.title+'</div><div class="alert-body">'+ins.body+'</div></div></div>';
@@ -314,218 +346,120 @@ function buildReportView(data) {
   }
 
   // History sidebar
-  var historyHtml = history.length > 1 ? '<div class="card">' +
-    '<div class="card-title" style="margin-bottom:4px;">Report history</div>' +
-    '<div class="card-sub" style="margin-bottom:12px;">Click any week to view</div>' +
+  var histHtml = history.length > 1 ? '<div class="card">' +
+    '<div class="card-title">Report history</div>' +
+    '<div class="card-sub">Click any week to view</div>' +
     history.map(function(w,i){
-      var lbl = 'w/e ' + new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-      return '<div class="history-item" onclick="selectWeek('+i+')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;">' +
-        '<div><div class="history-week">'+lbl+'</div><div class="history-meta">'+fmt(w.orders)+' orders \u00b7 '+fmtGBP(w.revenue)+'</div></div>' +
-        '<div style="font-size:12px;color:'+(w.report_data?'var(--green)':'var(--muted-l)')+'">'+(w.report_data?'\u2713 Report':'Pending')+'</div>' +
+      return '<div class="history-row" onclick="selectWeek('+i+')">' +
+        '<div><div class="hw">w/e '+new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div>' +
+        '<div class="hm">'+fmt(w.orders)+' orders &middot; '+fmtGBP(w.revenue)+'</div></div>' +
+        '<span style="font-size:11px;color:'+(w.report_data?'var(--green)':'var(--muted-l)')+';">'+(w.report_data?'\u2713 Report':'Pending')+'</span>' +
       '</div>';
-    }).join('') + '</div>' : '';
+    }).join('')+'</div>' : '';
 
-  // Full layout
   document.getElementById('reportView').innerHTML =
-    '<div class="dash-header">' +
-      '<div class="dash-title">' + restaurant.name + '</div>' +
-      '<div class="dash-sub">' + (restaurant.postcode||'') + ' \u00b7 ' + (restaurant.platforms||'') + '</div>' +
-      (week.week_ending ? '<div class="report-week">Week ending ' + new Date(week.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + '</div>' : '') +
-    '</div>' +
-    weekSelector +
-    (metricsHtml || '') +
-    buildTrendChart(history, 'orders') +
-    '<div class="main-col">' +
-      '<div style="min-width:0;">' +
-        (rep ? '<div class="card" style="margin-bottom:16px;">' +
-          '<div class="card-title" style="margin-bottom:4px;">' + (rep.headline||'Weekly analysis') + '</div>' +
-          '<div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">' + (rep.summary||'') + '</div>' +
-          insightsHtml +
-        '</div>' : '') +
-        '<div class="card" style="margin-bottom:16px;">' +
-          '<div class="card-title" style="margin-bottom:4px;">'+(plan==='starter'?'Your action checklist':'What we are working on')+'</div>' +
-          '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">'+(plan==='starter'?'Tick off as you complete each action':'Our team is handling these this week')+'</div>' +
-          '<div id="checklistContainer"></div>' +
+    '<div class="dash-title">'+(rest.name||'')+'</div>' +
+    '<div class="dash-sub">'+(rest.postcode||'')+' \u00b7 '+(rest.platforms||'')+'</div>' +
+    (week.week_ending ? '<div class="dash-week">Week ending '+new Date(week.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>' : '<div class="dash-week">&nbsp;</div>') +
+    weekSel +
+    metricsHtml +
+    chartHtml +
+    '<div class="two-col">' +
+      '<div>' +
+        (rep ? '<div class="card">' +
+          '<div class="card-title">'+(rep.headline||'Weekly analysis')+'</div>' +
+          '<div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">'+(rep.summary||'')+'</div>' +
+          insightsHtml + '</div>' : '') +
+        '<div class="card">' +
+          '<div class="card-title">'+(plan==='starter'?'Your action checklist':'What we are working on')+'</div>' +
+          '<div class="card-sub">'+(plan==='starter'?'Tick off as you go':'Our team is handling these this week')+'</div>' +
+          '<div id="chkContainer"></div>' +
         '</div>' +
         '<div class="card">' +
-          '<div class="card-title" style="margin-bottom:4px;">Contact us</div>' +
-          '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Send us a message &mdash; we respond within a few hours</div>' +
-          '<textarea id="contactMsg" style="width:100%;font-family:var(--sans);font-size:13.5px;border:1.5px solid var(--border-m);border-radius:var(--r);padding:10px 14px;resize:vertical;min-height:80px;background:var(--bg);color:var(--ink);outline:none;box-sizing:border-box;" placeholder="Ask us anything about your listing, report, or account..."></textarea>' +
-          '<button onclick="sendMessage()" style="margin-top:8px;font-family:var(--sans);font-size:13px;font-weight:700;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:9px 20px;cursor:pointer;">Send message</button>' +
-          '<div id="contactMsgStatus" style="font-size:12.5px;margin-top:6px;display:none;"></div>' +
+          '<div class="card-title">Contact us</div>' +
+          '<div class="card-sub">Send us a message &mdash; we respond within a few hours</div>' +
+          '<textarea id="contactMsg" class="contact-textarea" placeholder="Ask us anything about your listing, report, or account..."></textarea>' +
+          '<button class="btn-send" onclick="sendMsg()">Send message</button>' +
+          '<div id="msgStatus" style="font-size:12.5px;margin-top:6px;display:none;"></div>' +
         '</div>' +
       '</div>' +
-      '<div style="min-width:0;">' + historyHtml + '</div>' +
+      '<div>'+histHtml+'</div>' +
     '</div>';
 
-  // Now wire up checklist AFTER HTML is in DOM
-  if (rep) {
-    renderChecklist('checklistContainer', rep.thisWeekActions||[], rep.longerTermActions||[], week.week_ending, plan);
+  // Wire up checklist AFTER HTML in DOM
+  renderChecklist('chkContainer', rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], week.week_ending, plan);
+
+  // Draw chart AFTER HTML in DOM
+  if (history.length >= 2) {
+    setTimeout(function(){ drawChart(history, 'orders'); }, 50);
   }
 }
 
-function selectWeek(idx) {
-  weekIdx = idx;
+function selectWeek(i) {
+  weekIdx = i;
   buildReportView(dashData);
-  showView('report');
 }
 
 // ── Account view ──────────────────────────────────────────────────────────────
 function buildAccountView(data) {
-  var user       = data.user || {};
-  var restaurant = data.restaurant;
-  var plan       = user.plan || 'none';
-  var planStatus = user.plan_status || 'inactive';
-  var planNames  = {starter:'Starter \u2014 \u00a3199/mo', growth:'Growth \u2014 \u00a3499/mo', partner:'Partner \u2014 \u00a3999/mo', none:'No active plan'};
-
+  var user = data.user || {};
+  var rest = data.restaurant;
+  var plan = user.plan || 'none';
+  var status = user.plan_status || 'inactive';
+  var planLabels = {starter:'Starter \u2014 \u00a3199/mo',growth:'Growth \u2014 \u00a3499/mo',partner:'Partner \u2014 \u00a3999/mo',none:'No active plan'};
   document.getElementById('accountView').innerHTML =
-    '<div class="dash-header"><div class="dash-title">Account</div></div>' +
-    '<div class="card" style="margin-bottom:16px;">' +
+    '<div class="dash-title">Account</div><div class="dash-sub" style="margin-bottom:28px;">Manage your plan and settings</div>' +
+    '<div class="card" style="max-width:600px;margin-bottom:16px;">' +
       '<div class="card-title" style="margin-bottom:16px;">Your plan</div>' +
-      '<div class="account-row"><div><div class="account-label">Plan</div><div><span class="plan-badge">' + (planNames[plan]||plan) + '</span></div></div>' +
-        (plan==='none' ? '<a href="/onboarding" class="btn-sm">Choose plan</a>' : '<a href="/onboarding" class="btn-sm">Change</a>') +
-      '</div>' +
-      '<div class="account-row"><div class="account-label">Status</div>' +
-        '<div style="color:'+(planStatus==='active'?'var(--green)':'var(--red)')+'">' + planStatus + '</div></div>' +
-      '<div class="account-row"><div class="account-label">Email</div><div class="account-value">' + (user.email||email) + '</div></div>' +
-      (plan!=='none'&&planStatus==='active' ? '<div class="account-row"><div class="account-label">Cancel</div><button class="btn-sm danger" onclick="cancelSub()">Cancel at period end</button></div>' : '') +
+      '<div class="acct-row"><div><div class="acct-label">Current plan</div></div><span class="plan-badge">'+(planLabels[plan]||plan)+'</span></div>' +
+      '<div class="acct-row"><div class="acct-label">Status</div><div class="acct-val" style="color:'+(status==='active'?'var(--green)':'var(--red)')+';">'+(status==='active'?'Active':'Inactive')+'</div></div>' +
+      '<div class="acct-row"><div class="acct-label">Email</div><div class="acct-val">'+(user.email||email)+'</div></div>' +
+      (plan!=='none'&&status==='active'?'<div class="acct-row"><div class="acct-label">Cancel</div><button class="btn-sm red" onclick="cancelSub()">Cancel at period end</button></div>':'') +
     '</div>' +
-    (restaurant ? '<div class="card">' +
+    (rest?'<div class="card" style="max-width:600px;">' +
       '<div class="card-title" style="margin-bottom:16px;">Restaurant</div>' +
-      '<div class="account-row"><div class="account-label">Name</div><div class="account-value">' + restaurant.name + '</div></div>' +
-      '<div class="account-row"><div class="account-label">Postcode</div><div class="account-value">' + (restaurant.postcode||'-') + '</div></div>' +
-      '<div class="account-row"><div class="account-label">Platforms</div><div class="account-value">' + (restaurant.platforms||'-') + '</div></div>' +
-      '<div class="account-row"><div class="account-label">Update credentials</div><a href="/onboarding" class="btn-sm">Update</a></div>' +
-    '</div>' : '');
+      '<div class="acct-row"><div class="acct-label">Name</div><div class="acct-val">'+rest.name+'</div></div>' +
+      '<div class="acct-row"><div class="acct-label">Postcode</div><div class="acct-val">'+rest.postcode+'</div></div>' +
+      '<div class="acct-row"><div class="acct-label">Cuisine</div><div class="acct-val">'+(rest.cuisine||'\u2014')+'</div></div>' +
+      '<div class="acct-row"><div class="acct-label">Platforms</div><div class="acct-val">'+rest.platforms+'</div></div>' +
+      '<div class="acct-row"><div class="acct-label">Update details</div><a href="/onboarding" class="btn-sm">Update</a></div>' +
+    '</div>':'');
 }
 
 async function cancelSub() {
-  if (!confirm('Cancel your subscription? You will keep access until the end of your current billing period.')) return;
+  if (!confirm('Cancel your subscription? You keep access until end of billing period.')) return;
   var r = await fetch('/api/cancel-subscription',{method:'POST',headers:{'x-session-token':token}});
   var d = await r.json();
-  alert(d.ok ? 'Subscription cancelled.' : (d.error||'Could not cancel.'));
+  alert(d.ok ? 'Cancelled. You keep access until period end.' : (d.error||'Could not cancel.'));
 }
 
-async function sendMessage() {
-  var msg    = document.getElementById('contactMsg');
-  var status = document.getElementById('contactMsgStatus');
+async function sendMsg() {
+  var msg = document.getElementById('contactMsg');
+  var st  = document.getElementById('msgStatus');
   if (!msg||!msg.value.trim()) return;
-  status.style.display='block'; status.style.color='var(--muted)'; status.textContent='Sending...';
+  st.style.display='block'; st.style.color='var(--muted)'; st.textContent='Sending...';
   try {
     var r = await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json','x-session-token':token},body:JSON.stringify({message:msg.value.trim()})});
     var d = await r.json();
-    if (d.ok) { status.style.color='var(--green)'; status.textContent='Message sent. We will get back to you soon.'; msg.value=''; }
+    if(d.ok){st.style.color='var(--green)';st.textContent='Sent! We will get back to you soon.';msg.value='';}
     else throw new Error(d.error);
-  } catch(e) { status.style.color='var(--red)'; status.textContent='Could not send. Please email us directly.'; }
+  } catch(e){st.style.color='var(--red)';st.textContent='Could not send. Please email us directly.';}
 }
 
-// ── Load data ─────────────────────────────────────────────────────────────────
-fetch('/api/dashboard', {headers:{'x-session-token':token}})
-  .then(function(r){ return r.json(); })
-  .then(function(d) {
-    if (!d.ok) { logout(); return; }
-    dashData = d;
-    fetch('/api/me',{headers:{'x-session-token':token}}).then(function(r){return r.json();}).then(function(me){
+// ── Load ──────────────────────────────────────────────────────────────────────
+fetch('/api/dashboard',{headers:{'x-session-token':token}})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(!d.ok){logout();return;}
+    return fetch('/api/me',{headers:{'x-session-token':token}}).then(function(r){return r.json();}).then(function(me){
+      dashData = d;
       dashData.user = me;
-      document.getElementById('loadingState').style.display = 'none';
       buildReportView(dashData);
       buildAccountView(dashData);
       showView('report');
     });
   })
-  .catch(function(){ logout(); });
+  .catch(function(){logout();});
 </script>
 </body>
-</html
-  // ── Trend chart ──────────────────────────────────────────────────────────
-  function buildTrendChart(history, metric) {
-    if (!history || history.length < 2) return '';
-    var data = history.slice(0,12).reverse();
-    var vals = data.map(function(w){ return Number(w[metric]||0); });
-    var maxV = Math.max.apply(null, vals) || 1;
-    var tabs = ['orders','revenue','aov','rating'];
-    var tabLabels = {orders:'Orders',revenue:'Revenue',aov:'Avg order',rating:'Rating'};
-    var tabsHtml = tabs.map(function(t){
-      return '<button class="trend-tab'+(t===metric?' active':'')+'" onclick="switchChart(this,''+t+'')">' + tabLabels[t] + '</button>';
-    }).join('');
-    var barsHtml = chartBars(data, metric, maxV);
-    return '<div class="trend-chart-wrap" id="trendChart">' +
-      '<div class="trend-chart-title">Performance trend</div>' +
-      '<div class="trend-tabs" id="trendTabs">' + tabsHtml + '</div>' +
-      '<div class="chart-bars" id="chartBars">' + barsHtml + '</div>' +
-    '</div>';
-  }
-
-  function chartBars(data, metric, maxV) {
-    if (!maxV) maxV = 1;
-    return data.map(function(w){
-      var v   = Number(w[metric]||0);
-      var h   = Math.max(4, Math.round(v/maxV*100));
-      var lbl = new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-      var disp = metric==='revenue'||metric==='aov' ? '£'+Number(v).toFixed(0) : String(v);
-      return '<div class="chart-bar-wrap">' +
-        '<div class="chart-val">'+disp+'</div>' +
-        '<div class="chart-bar" style="height:'+h+'%"></div>' +
-        '<div class="chart-label">'+lbl+'</div>' +
-      '</div>';
-    }).join('');
-  }
-
-  function switchChart(btn, metric) {
-    document.querySelectorAll('.trend-tab').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active');
-    var bars = document.getElementById('chartBars');
-    if (!bars || !dashData) return;
-    var data = (dashData.history||[]).slice(0,12).reverse();
-    var vals = data.map(function(w){ return Number(w[metric]||0); });
-    var maxV = Math.max.apply(null,vals)||1;
-    bars.innerHTML = chartBars(data, metric, maxV);
-  }
-
-  // ── Checklist ─────────────────────────────────────────────────────────────
-  function renderChecklist(containerId, thisWeek, longerTerm, weekEnding, plan) {
-    var container = document.getElementById(containerId);
-    if (!container) return;
-    var key = 'piq_chk_' + String(weekEnding).replace(/[^a-zA-Z0-9]/g,'_');
-    var saved = {};
-    try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
-    var isSelf = (!plan || plan === 'starter');
-    var html = '';
-    if (!thisWeek.length && !longerTerm.length) {
-      container.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">No actions yet for this week.</div>';
-      return;
-    }
-    function item(text, tag, tagCls) {
-      var id = 'c' + text.replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
-      var done = !!saved[id];
-      return '<div class="checklist-item' + (done?' done':'') + '" id="'+id+'" data-key="'+key+'"' +
-        (isSelf ? ' onclick="tickItem(this)"' : '') + '>' +
-        '<div class="check-box">' + (done?'&#10003;':'') + '</div>' +
-        '<div class="check-text">' + text + '</div>' +
-        '<span class="check-tag '+tagCls+'">'+tag+'</span>' +
-      '</div>';
-    }
-    if (thisWeek.length) {
-      html += '<div class="checklist-section-label">This week</div>';
-      html += thisWeek.map(function(a){ return item(a, isSelf?'To do':'In progress', 'tag-now'); }).join('');
-    }
-    if (longerTerm.length) {
-      html += '<div class="checklist-section-label" style="margin-top:10px;">Coming up</div>';
-      html += longerTerm.map(function(a){ return item(a,'Soon','tag-week'); }).join('');
-    }
-    container.innerHTML = html;
-  }
-
-  function tickItem(el) {
-    var key  = el.getAttribute('data-key');
-    var id   = el.id;
-    var done = !el.classList.contains('done');
-    el.classList.toggle('done', done);
-    el.querySelector('.check-box').innerHTML = done ? '&#10003;' : '';
-    var saved = {};
-    try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
-    if (done) saved[id] = 1; else delete saved[id];
-    try { localStorage.setItem(key, JSON.stringify(saved)); } catch(e){}
-  }
-
->
+</html>
