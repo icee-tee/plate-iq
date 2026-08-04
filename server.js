@@ -21,6 +21,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
 
+if (!process.env.SMTP_HOST) console.warn('⚠  No SMTP_HOST set — emails disabled. Add SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM to Railway env vars.');
 const mailer = (process.env.SMTP_HOST && process.env.SMTP_USER)
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT)||587,
@@ -707,7 +708,7 @@ app.post('/api/admin/generate-report', requireAdmin, async (req, res) => {
       await pgPool.query('UPDATE reports SET emailed_at=NOW() WHERE restaurant_id=$1 AND week_ending=$2', [restaurantId, weekEnding]);
     }
 
-    res.json({ ok: true, report: reportData });
+    res.json({ ok: true, report: reportData, emailed: !!(user?.plan_status === 'active' && mailer) });
   } catch(e) {
     console.error('[admin] generate-report error:', e.message);
     res.status(500).json({ ok: false, error: e.message });
@@ -745,6 +746,29 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
   } catch(e) {
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+
+// POST /api/contact — client sends message to PlateIQ team
+app.post('/api/contact', requireAuth, async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ ok: false, error: 'No message provided.' });
+  const restaurant = await getUserRestaurant(req.userEmail);
+  const subject = `PlateIQ message from ${restaurant ? restaurant.name : req.userEmail}`;
+  const body = `Message from: ${req.userEmail}\nRestaurant: ${restaurant ? restaurant.name + ' (' + restaurant.postcode + ')' : 'Not set up'}\n\n${message}`;
+  console.log('[contact]', subject, '\n', body);
+  let emailed = false;
+  if (mailer) {
+    try {
+      await mailer.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to:   process.env.CONTACT_EMAIL || process.env.SMTP_USER,
+        subject, text: body
+      });
+      emailed = true;
+    } catch(e) { console.warn('[contact] email failed:', e.message); }
+  }
+  res.json({ ok: true, emailed });
 });
 
 // ── Page routes ───────────────────────────────────────────────────────────────
