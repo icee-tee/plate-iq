@@ -615,7 +615,8 @@ app.get('/api/admin/clients', requireAdmin, async (req, res) => {
   const r = await pgPool.query(`
     SELECT u.email, u.plan, u.plan_status, u.created_at,
            rest.id as restaurant_id, rest.name, rest.postcode, rest.cuisine, rest.platforms,
-           (SELECT COUNT(*) FROM weekly_data wd WHERE wd.restaurant_id = rest.id) as weeks_logged
+           (SELECT COUNT(*) FROM weekly_data wd WHERE wd.restaurant_id = rest.id) as weeks_logged,
+           (SELECT COUNT(*) FROM reports rep WHERE rep.restaurant_id = rest.id) as reports_count
     FROM users u
     LEFT JOIN restaurants rest ON rest.user_email = u.email
     ORDER BY u.created_at DESC
@@ -726,6 +727,22 @@ app.delete('/api/admin/client/:email', requireAdmin, async (req, res) => {
 
 // GET /health — quick check the server is alive
 app.get('/health', (req, res) => res.json({ ok: true, db: !!pgPool, time: new Date().toISOString() }));
+
+
+// GET /api/admin/client-history/:restId — all weekly entries for a restaurant
+app.get('/api/admin/client-history/:restId', requireAdmin, async (req, res) => {
+  if (!pgPool) return res.json({ ok: true, history: [] });
+  try {
+    const r = await pgPool.query(
+      `SELECT wd.*, rep.report_data IS NOT NULL as has_report
+       FROM weekly_data wd
+       LEFT JOIN reports rep ON rep.restaurant_id=wd.restaurant_id AND rep.week_ending=wd.week_ending
+       WHERE wd.restaurant_id=$1 ORDER BY wd.week_ending DESC`,
+      [req.params.restId]
+    );
+    res.json({ ok: true, history: r.rows });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
+});
 
 // GET /api/admin/stats — revenue overview
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
