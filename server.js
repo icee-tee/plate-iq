@@ -87,14 +87,17 @@ async function initDb() {
       id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
       week_ending   DATE NOT NULL,
+      platform      TEXT NOT NULL DEFAULT 'all',
       orders        INTEGER,
       revenue       NUMERIC(10,2),
       aov           NUMERIC(8,2),
       rating        NUMERIC(3,2),
       new_reviews   INTEGER,
+      unanswered_reviews INTEGER DEFAULT 0,
       notes         TEXT,
+      listing_audit JSONB,
       created_at    TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(restaurant_id, week_ending)
+      UNIQUE(restaurant_id, week_ending, platform)
     )
   `);
   await pgPool.query(`
@@ -102,12 +105,22 @@ async function initDb() {
       id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
       week_ending   DATE NOT NULL,
+      platform      TEXT NOT NULL DEFAULT 'all',
       report_data   JSONB NOT NULL,
       emailed_at    TIMESTAMPTZ,
       created_at    TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(restaurant_id, week_ending)
+      UNIQUE(restaurant_id, week_ending, platform)
     )
   `);
+  // Add new columns to existing tables safely
+  await pgPool.query(`ALTER TABLE weekly_data ADD COLUMN IF NOT EXISTS platform TEXT NOT NULL DEFAULT 'all'`).catch(()=>{});
+  await pgPool.query(`ALTER TABLE weekly_data ADD COLUMN IF NOT EXISTS unanswered_reviews INTEGER DEFAULT 0`).catch(()=>{});
+  await pgPool.query(`ALTER TABLE weekly_data ADD COLUMN IF NOT EXISTS listing_audit JSONB`).catch(()=>{});
+  await pgPool.query(`ALTER TABLE weekly_data DROP CONSTRAINT IF EXISTS weekly_data_restaurant_id_week_ending_key`).catch(()=>{});
+  await pgPool.query(`ALTER TABLE weekly_data ADD UNIQUE (restaurant_id, week_ending, platform)`).catch(()=>{});
+  await pgPool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS platform TEXT NOT NULL DEFAULT 'all'`).catch(()=>{});
+  await pgPool.query(`ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_restaurant_id_week_ending_key`).catch(()=>{});
+  await pgPool.query(`ALTER TABLE reports ADD UNIQUE (restaurant_id, week_ending, platform)`).catch(()=>{});
   console.log('✅ DB ready');
 }
 initDb().catch(console.error);
@@ -159,13 +172,13 @@ async function getUserRestaurant(email) {
   const r = await pgPool.query('SELECT * FROM restaurants WHERE user_email=$1 LIMIT 1', [email]);
   return r.rows[0] || null;
 }
-async function getRestaurantHistory(restaurantId) {
+async function getRestaurantHistory(restaurantId, platform='all') {
   if (!pgPool) return [];
   const r = await pgPool.query(
     `SELECT wd.*, rep.report_data FROM weekly_data wd
-     LEFT JOIN reports rep ON rep.restaurant_id=wd.restaurant_id AND rep.week_ending=wd.week_ending
-     WHERE wd.restaurant_id=$1 ORDER BY wd.week_ending DESC LIMIT 20`,
-    [restaurantId]
+     LEFT JOIN reports rep ON rep.restaurant_id=wd.restaurant_id AND rep.week_ending=wd.week_ending AND rep.platform=wd.platform
+     WHERE wd.restaurant_id=$1 AND wd.platform=$2 ORDER BY wd.week_ending DESC LIMIT 20`,
+    [restaurantId, platform]
   );
   return r.rows;
 }
@@ -585,10 +598,27 @@ app.post('/api/credentials', requireAuth, async (req, res) => {
 app.get('/api/dashboard', requireAuth, async (req, res) => {
   try {
     const restaurant = await getUserRestaurant(req.userEmail);
-    if (!restaurant) return res.json({ ok: true, restaurant: null, history: [], latestReport: null });
-    const history = await getRestaurantHistory(restaurant.id);
-    const latestReport = history[0]?.report_data || null;
-    res.json({ ok: true, restaurant, history, latestReport });
+    if (!restaurant) return res.json({ ok: true, restaurant: null, platforms: [], historyByPlatform: {} });
+
+    // Find which platforms have data
+    const platRows = pgPool ? await pgPool.query(
+      'SELECT DISTINCT platform FROM weekly_data WHERE restaurant_id=$1 ORDER BY platform',
+      [restaurant.id]
+    ) : { rows: [] };
+    const platforms = platRows.rows.map(r => r.platform);
+
+    // Get history for each platform
+    const historyByPlatform = {};
+    for (const p of platforms) {
+      historyByPlatform[p] = await getRestaurantHistory(restaurant.id, p);
+    }
+    // Also get 'all' if no platform-specific data
+    if (!platforms.length) {
+      historyByPlatform['all'] = await getRestaurantHistory(restaurant.id, 'all');
+      if (historyByPlatform['all'].length) platforms.push('all');
+    }
+
+    res.json({ ok: true, restaurant, platforms, historyByPlatform });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
@@ -615,7 +645,7 @@ app.get('/api/admin/clients', requireAdmin, async (req, res) => {
   const r = await pgPool.query(`
     SELECT u.email, u.plan, u.plan_status, u.created_at,
            rest.id as restaurant_id, rest.name, rest.postcode, rest.cuisine, rest.platforms,
-           (SELECT COUNT(*) FROM weekly_data wd WHERE wd.restaurant_id = rest.id) as weeks_logged,
+           (SELECT COUNT(DISTINCT week_ending) FROM weekly_data wd WHERE wd.restaurant_id = rest.id) as weeks_logged,
            (SELECT COUNT(*) FROM reports rep WHERE rep.restaurant_id = rest.id) as reports_count
     FROM users u
     LEFT JOIN restaurants rest ON rest.user_email = u.email
@@ -646,6 +676,7 @@ app.post('/api/admin/weekly-data', requireAdmin, async (req, res) => {
   if (!pgPool) return res.json({ ok: true });
   try {
     const {
+      platform = 'all',
       unansweredReviews, totalItems, photoItems, headerPhoto,
       descriptions, promotion, categories, featured, ranking,
       whatChanged, whatNoticed
@@ -662,19 +693,19 @@ app.post('/api/admin/weekly-data', requireAdmin, async (req, res) => {
     };
 
     await pgPool.query(`
-      INSERT INTO weekly_data (restaurant_id, week_ending, orders, revenue, aov, rating, new_reviews, notes, listing_audit, team_notes)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-      ON CONFLICT (restaurant_id, week_ending) DO UPDATE SET
-        orders=$3, revenue=$4, aov=$5, rating=$6, new_reviews=$7, notes=$8, listing_audit=$9, team_notes=$10
-    `, [restaurantId, weekEnding, orders, revenue, aov, rating, newReviews||0, notes||null,
-        JSON.stringify(listingAudit), [whatChanged,whatNoticed,notes].filter(Boolean).join(' | ') || null]);
+      INSERT INTO weekly_data (restaurant_id, week_ending, platform, orders, revenue, aov, rating, new_reviews, unanswered_reviews, notes, listing_audit)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      ON CONFLICT (restaurant_id, week_ending, platform) DO UPDATE SET
+        orders=$4, revenue=$5, aov=$6, rating=$7, new_reviews=$8, unanswered_reviews=$9, notes=$10, listing_audit=$11
+    `, [restaurantId, weekEnding, platform, orders, revenue, aov, rating,
+        newReviews||0, unansweredReviews||0, notes||null, JSON.stringify(listingAudit)]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
 // POST /admin/generate-report — generate AI report for a specific week
 app.post('/api/admin/generate-report', requireAdmin, async (req, res) => {
-  const { restaurantId, weekEnding } = req.body;
+  const { restaurantId, weekEnding, platform = 'all' } = req.body;
   if (!restaurantId || !weekEnding) return res.status(400).json({ ok: false, error: 'restaurantId and weekEnding required.' });
   if (!pgPool) return res.status(400).json({ ok: false, error: 'No DB.' });
   try {
@@ -683,24 +714,24 @@ app.post('/api/admin/generate-report', requireAdmin, async (req, res) => {
     const restaurant = rr.rows[0];
     if (!restaurant) return res.status(404).json({ ok: false, error: 'Restaurant not found.' });
 
-    // Get this week's data
-    const wr = await pgPool.query('SELECT * FROM weekly_data WHERE restaurant_id=$1 AND week_ending=$2', [restaurantId, weekEnding]);
+    // Get this week's data for this platform
+    const wr = await pgPool.query('SELECT * FROM weekly_data WHERE restaurant_id=$1 AND week_ending=$2 AND platform=$3', [restaurantId, weekEnding, platform]);
     const weekData = wr.rows[0];
-    if (!weekData) return res.status(404).json({ ok: false, error: 'No weekly data found for this week. Enter data first.' });
+    if (!weekData) return res.status(404).json({ ok: false, error: `No data for ${platform} week ${weekEnding}. Enter data first.` });
 
-    // Get history
-    const history = await getRestaurantHistory(restaurantId);
+    // Get history for this platform
+    const history = await getRestaurantHistory(restaurantId, platform);
 
     // Generate AI report
-    console.log(`[admin] Generating report for ${restaurant.name} week ${weekEnding}`);
-    const reportData = await generateReport(restaurant, weekData, history);
+    console.log(`[admin] Generating report for ${restaurant.name} ${platform} week ${weekEnding}`);
+    const reportData = await generateReport(restaurant, weekData, history, platform);
 
     // Save report
     await pgPool.query(`
-      INSERT INTO reports (restaurant_id, week_ending, report_data)
-      VALUES ($1,$2,$3)
-      ON CONFLICT (restaurant_id, week_ending) DO UPDATE SET report_data=$3
-    `, [restaurantId, weekEnding, JSON.stringify(reportData)]);
+      INSERT INTO reports (restaurant_id, week_ending, platform, report_data)
+      VALUES ($1,$2,$3,$4)
+      ON CONFLICT (restaurant_id, week_ending, platform) DO UPDATE SET report_data=$4
+    `, [restaurantId, weekEnding, platform, JSON.stringify(reportData)]);
 
     // Send email if client has active plan
     const user = await findUser(restaurant.user_email);
@@ -731,16 +762,21 @@ app.get('/health', (req, res) => res.json({ ok: true, db: !!pgPool, time: new Da
 
 // GET /api/admin/client-history/:restId — all weekly entries for a restaurant
 app.get('/api/admin/client-history/:restId', requireAdmin, async (req, res) => {
-  if (!pgPool) return res.json({ ok: true, history: [] });
+  if (!pgPool) return res.json({ ok: true, history: [], platforms: [] });
   try {
+    const platRows = await pgPool.query(
+      'SELECT DISTINCT platform FROM weekly_data WHERE restaurant_id=$1 ORDER BY platform',
+      [req.params.restId]
+    );
+    const platforms = platRows.rows.map(r => r.platform);
     const r = await pgPool.query(
       `SELECT wd.*, rep.report_data IS NOT NULL as has_report
        FROM weekly_data wd
-       LEFT JOIN reports rep ON rep.restaurant_id=wd.restaurant_id AND rep.week_ending=wd.week_ending
-       WHERE wd.restaurant_id=$1 ORDER BY wd.week_ending DESC`,
+       LEFT JOIN reports rep ON rep.restaurant_id=wd.restaurant_id AND rep.week_ending=wd.week_ending AND rep.platform=wd.platform
+       WHERE wd.restaurant_id=$1 ORDER BY wd.week_ending DESC, wd.platform`,
       [req.params.restId]
     );
-    res.json({ ok: true, history: r.rows });
+    res.json({ ok: true, history: r.rows, platforms });
   } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
