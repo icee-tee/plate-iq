@@ -152,10 +152,29 @@ h2{font-family:var(--serif);font-size:28px;color:var(--ink);margin-bottom:8px;}
   <!-- Step 3 -->
   <div class="step-pane" id="step3">
     <h2>Platform credentials</h2>
-    <p class="sub">We need these to access your performance data and make changes on your behalf. Only our team can access these.</p>
+    <p class="sub">Select which platforms you are on and enter your login details for each. We need these to access your data and make changes on your behalf.</p>
     <div class="card">
+      <!-- Platform toggles -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Which platforms are you on?</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;padding:9px 16px;border:2px solid var(--border-m);border-radius:99px;cursor:pointer;transition:all .12s;" id="lbl-ue">
+            <input type="checkbox" id="plat-ue" value="Uber Eats" onchange="toggleCredFields()" style="display:none;">
+            <span style="width:10px;height:10px;border-radius:50%;background:#06c167;flex-shrink:0;"></span>Uber Eats
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;padding:9px 16px;border:2px solid var(--border-m);border-radius:99px;cursor:pointer;transition:all .12s;" id="lbl-je">
+            <input type="checkbox" id="plat-je" value="Just Eat" onchange="toggleCredFields()" style="display:none;">
+            <span style="width:10px;height:10px;border-radius:50%;background:#ff8000;flex-shrink:0;"></span>Just Eat
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;padding:9px 16px;border:2px solid var(--border-m);border-radius:99px;cursor:pointer;transition:all .12s;" id="lbl-de">
+            <input type="checkbox" id="plat-de" value="Deliveroo" onchange="toggleCredFields()" style="display:none;">
+            <span style="width:10px;height:10px;border-radius:50%;background:#00ccbc;flex-shrink:0;"></span>Deliveroo
+          </label>
+        </div>
+      </div>
+      <!-- Cred fields per platform -->
       <div id="credFields"></div>
-      <div class="security-note">&#128274; Your credentials are stored securely and only accessed by a PlateIQ team member when working on your account.</div>
+      <div class="security-note">&#128274; Credentials are encrypted and stored securely. Only accessed by your PlateIQ account manager.</div>
     </div>
     <div><button class="btn-secondary" onclick="goStep(2)">Back</button><button class="btn-primary" onclick="submitOnboarding()" id="submitBtn">Complete setup &rarr;</button></div>
     <div class="err" id="step3err"></div>
@@ -196,23 +215,52 @@ function goStep3() {
   var err = document.getElementById('step2err'); err.style.display='none';
   if (!document.getElementById('restName').value.trim()) { err.textContent='Please enter your restaurant name.'; err.style.display='block'; return; }
   if (!document.getElementById('restPostcode').value.trim()) { err.textContent='Please enter your postcode.'; err.style.display='block'; return; }
-  buildCredFields(); goStep(3);
+  // Pre-select platforms from interest or restPlatforms dropdown
+  try {
+    var interest = JSON.parse(localStorage.getItem('piq_interest')||'{}');
+    var plat = (interest.platforms||'').toLowerCase();
+    var platDrop = document.getElementById('restPlatforms');
+    var dropVal  = platDrop ? platDrop.value.toLowerCase() : '';
+    var combined = plat + ' ' + dropVal;
+    var ueEl = document.getElementById('plat-ue');
+    var jeEl = document.getElementById('plat-je');
+    var deEl = document.getElementById('plat-de');
+    if(ueEl) ueEl.checked = combined.includes('uber');
+    if(jeEl) jeEl.checked = combined.includes('just');
+    if(deEl) deEl.checked = combined.includes('deliveroo');
+  } catch(e){}
+  toggleCredFields();
+  goStep(3);
 }
 
-function buildCredFields() {
-  var platforms = document.getElementById('restPlatforms').value;
-  var list = [];
-  if (platforms.includes('Uber Eats')) list.push({id:'ue', name:'Uber Eats', color:'#06c167'});
-  if (platforms.includes('Just Eat'))  list.push({id:'je', name:'Just Eat',  color:'#ff8000'});
-  if (platforms.includes('Deliveroo')) list.push({id:'de', name:'Deliveroo', color:'#00ccbc'});
-  if (!list.length) list.push({id:'ue', name:'Uber Eats', color:'#06c167'});
-  document.getElementById('credFields').innerHTML = list.map(function(p) {
-    return '<div class="platform-cred"><div class="platform-cred-title" style="color:'+p.color+'">'+p.name+'</div>' +
-      '<div class="f-row"><div class="f-group"><label>Login email</label><input type="email" id="cred-'+p.id+'-email" placeholder="manager@restaurant.com"></div>' +
-      '<div class="f-group"><label>Password</label><input type="password" id="cred-'+p.id+'-pwd" placeholder="Your platform password"></div></div>' +
-      '<div class="f-group"><label>Notes (optional)</label><input type="text" id="cred-'+p.id+'-notes" placeholder="e.g. 2FA method, restaurant ID..."></div></div>';
+function toggleCredFields() {
+  var all = [{id:'ue',name:'Uber Eats',color:'#06c167'},{id:'je',name:'Just Eat',color:'#ff8000'},{id:'de',name:'Deliveroo',color:'#00ccbc'}];
+  var container = document.getElementById('credFields');
+  // Update label styling
+  all.forEach(function(p) {
+    var cb  = document.getElementById('plat-'+p.id);
+    var lbl = document.getElementById('lbl-'+p.id);
+    if (lbl) {
+      lbl.style.borderColor = cb.checked ? p.color : '';
+      lbl.style.background  = cb.checked ? p.color+'18' : '';
+    }
+  });
+  // Rebuild cred fields
+  var active = all.filter(function(p){ return document.getElementById('plat-'+p.id).checked; });
+  if (!active.length) { container.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">Select at least one platform above.</div>'; return; }
+  container.innerHTML = active.map(function(p) {
+    return '<div class="platform-cred" style="margin-bottom:14px;padding:14px;background:var(--bg);border-radius:var(--r);">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:'+p.color+';margin-bottom:10px;">'+p.name+'</div>' +
+      '<div class="f-row">' +
+        '<div class="f-group"><label>Login email</label><input type="email" id="cred-'+p.id+'-email" placeholder="manager@restaurant.com"></div>' +
+        '<div class="f-group"><label>Password</label><input type="password" id="cred-'+p.id+'-pwd" placeholder="Your platform password"></div>' +
+      '</div>' +
+      '<div class="f-group"><label>Notes (optional)</label><input type="text" id="cred-'+p.id+'-notes" placeholder="e.g. restaurant ID, 2FA setup, location name"></div>' +
+    '</div>';
   }).join('');
 }
+
+function buildCredFields() { toggleCredFields(); } // alias for goStep3
 
 async function submitOnboarding() {
   var err = document.getElementById('step3err'); err.style.display='none';
