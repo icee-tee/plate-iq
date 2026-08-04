@@ -38,6 +38,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px
 .dash-sub{font-size:13px;color:var(--muted);}
 .dash-week{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-top:4px;margin-bottom:24px;}
 
+/* Platform tabs */
+.plat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.plat-tab{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:7px 16px;border-radius:99px;border:2px solid var(--border-m);background:var(--card);color:var(--muted);cursor:pointer;transition:all .12s;}
+.plat-tab.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+.plat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 /* Week selector */
 .week-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
 .week-btn{font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:99px;border:1.5px solid var(--border-m);background:var(--card);color:var(--muted);cursor:pointer;}
@@ -285,14 +290,74 @@ function switchMetric(btn, metric) {
 }
 
 // ── Build report view ─────────────────────────────────────────────────────────
+var activePlatform = 'all';
+
+var platColors = {'Uber Eats':'#06c167','Just Eat':'#ff8000','Deliveroo':'#00ccbc','all':'#e8a020'};
+var platLabels = {'Uber Eats':'Uber Eats','Just Eat':'Just Eat','Deliveroo':'Deliveroo','all':'All platforms'};
+
+function buildPlatformTabs(platforms) {
+  if (!platforms || platforms.length <= 1) return '';
+  // Always show All if multiple platforms
+  var tabs = platforms.includes('all') ? platforms : ['all'].concat(platforms);
+  // Remove 'all' if there's only one real platform
+  if (platforms.length === 1) tabs = platforms;
+  return '<div class="plat-tabs">' +
+    tabs.map(function(p) {
+      var color = platColors[p] || '#e8a020';
+      return '<button class="plat-tab' + (p===activePlatform?' active':'') + '" onclick="switchPlatform(this,&quot;' + p + '&quot;)">' +
+        (p!=='all'?'<span class="plat-dot" style="background:'+color+';"></span>':'') +
+        platLabels[p] +
+      '</button>';
+    }).join('') +
+  '</div>';
+}
+
+function switchPlatform(btn, platform) {
+  activePlatform = platform;
+  document.querySelectorAll('.plat-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  weekIdx = 0;
+  buildReportView(dashData);
+}
+
+function getActiveHistory() {
+  if (!dashData) return [];
+  var hbp = dashData.historyByPlatform || {};
+  if (activePlatform === 'all') {
+    // Combine: sum orders+revenue, average aov+rating per week
+    var allWeeks = {};
+    Object.keys(hbp).forEach(function(p) {
+      if (p === 'all') return;
+      (hbp[p]||[]).forEach(function(w) {
+        var key = w.week_ending;
+        if (!allWeeks[key]) allWeeks[key] = {week_ending:key, orders:0, revenue:0, _aovSum:0, _ratingSum:0, _count:0, report_data:w.report_data};
+        allWeeks[key].orders   += Number(w.orders||0);
+        allWeeks[key].revenue  += Number(w.revenue||0);
+        allWeeks[key]._aovSum  += Number(w.aov||0);
+        allWeeks[key]._ratingSum += Number(w.rating||0);
+        allWeeks[key]._count   += 1;
+      });
+    });
+    // If no per-platform data, fall back to 'all'
+    if (!Object.keys(allWeeks).length) return hbp['all'] || [];
+    return Object.values(allWeeks).map(function(w) {
+      w.aov    = w._count ? (w._aovSum    / w._count).toFixed(2) : 0;
+      w.rating = w._count ? (w._ratingSum / w._count).toFixed(2) : 0;
+      return w;
+    }).sort(function(a,b){ return b.week_ending > a.week_ending ? 1 : -1; });
+  }
+  return hbp[activePlatform] || [];
+}
+
 function buildReportView(data) {
-  var rest    = data.restaurant;
-  var history = data.history || [];
-  var plan    = data.user && data.user.plan;
+  var rest      = data.restaurant;
+  var platforms = data.platforms || ['all'];
+  var plan      = data.user && data.user.plan;
+  var history   = getActiveHistory();
 
   if (!rest) {
     document.getElementById('reportView').innerHTML =
-      '<div class="empty"><div style="font-size:36px;margin-bottom:16px;">\uD83D\uDCC5</div>' +
+      '<div class="empty"><div style="font-size:36px;margin-bottom:16px;">&#128197;</div>' +
       '<div style="font-family:var(--serif);font-size:22px;margin-bottom:8px;">Setup not complete</div>' +
       '<div style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">Complete your account setup to get started.</div>' +
       '<a href="/onboarding" style="display:inline-block;font-family:var(--sans);font-size:14px;font-weight:700;background:var(--ink);color:#fff;text-decoration:none;border-radius:var(--r);padding:11px 24px;">Complete setup \u2192</a></div>';
@@ -303,6 +368,9 @@ function buildReportView(data) {
   var week = history[idx] || {};
   var rep  = week.report_data || null;
   var sc   = rep ? rep.scorecard : null;
+
+  // Platform tabs
+  var platTabsHtml = buildPlatformTabs(platforms);
 
   // Week selector
   var weekSel = history.length > 1 ?
@@ -355,10 +423,19 @@ function buildReportView(data) {
       '</div>';
     }).join('')+'</div>' : '';
 
+  // No data yet
+  var noDataBanner = !history.length ?
+    '<div style="background:var(--amber-p);border:1px solid rgba(232,160,32,.3);border-radius:var(--r);padding:14px 18px;display:flex;gap:12px;align-items:flex-start;margin-bottom:20px;">' +
+    '<span style="font-size:20px;">&#128338;</span>' +
+    '<div><div style="font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:2px;">Your first report is being prepared</div>' +
+    '<div style="font-size:13px;color:var(--amber-d);">Our team will log into your account within 48 hours and generate your first weekly report. We will email you when it is ready.</div></div></div>' : '';
+
   document.getElementById('reportView').innerHTML =
+    platTabsHtml +
     '<div class="dash-title">'+(rest.name||'')+'</div>' +
-    '<div class="dash-sub">'+(rest.postcode||'')+' \u00b7 '+(rest.platforms||'')+'</div>' +
-    (week.week_ending ? '<div class="dash-week">Week ending '+new Date(week.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>' : '<div class="dash-week">&nbsp;</div>') +
+    '<div class="dash-sub">'+(rest.postcode||'')+' \u00b7 '+(rest.platforms||'')+(activePlatform!=='all'?' \u00b7 '+platLabels[activePlatform]:'')+'</div>' +
+    (week.week_ending ? '<div class="dash-week">Week ending '+new Date(week.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>' : '<div style="height:8px;"></div>') +
+    noDataBanner +
     weekSel +
     metricsHtml +
     chartHtml +
@@ -369,8 +446,8 @@ function buildReportView(data) {
           '<div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">'+(rep.summary||'')+'</div>' +
           insightsHtml + '</div>' : '') +
         '<div class="card">' +
-          '<div class="card-title">'+'Action checklist'+'</div>' +
-          '<div class="card-sub">'+'Tick off as you or our team complete each action'+'</div>' +
+          '<div class="card-title">Action checklist</div>' +
+          '<div class="card-sub">Tick off as you or our team complete each action</div>' +
           '<div id="chkContainer"></div>' +
         '</div>' +
         '<div class="card">' +
@@ -384,13 +461,8 @@ function buildReportView(data) {
       '<div>'+histHtml+'</div>' +
     '</div>';
 
-  // Wire up checklist AFTER HTML in DOM
   renderChecklist('chkContainer', rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], week.week_ending, plan);
-
-  // Draw chart AFTER HTML in DOM
-  if (history.length >= 2) {
-    setTimeout(function(){ drawChart(history, 'orders'); }, 50);
-  }
+  if (history.length >= 2) setTimeout(function(){ drawChart(history,'orders'); }, 50);
 }
 
 function selectWeek(i) {
