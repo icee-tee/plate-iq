@@ -107,13 +107,12 @@ tr:hover td{background:var(--bg);}
     <div class="f-group">
       <label>Platform</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;" id="platformTabs">
-        <button type="button" class="ptab active" data-plat="all"     onclick="setPlatformTab(this)">All platforms (combined)</button>
-        <button type="button" class="ptab"         data-plat="Uber Eats" onclick="setPlatformTab(this)" style="border-color:#06c167;">Uber Eats</button>
+        <button type="button" class="ptab active" data-plat="Uber Eats" onclick="setPlatformTab(this)" style="border-color:#06c167;">Uber Eats</button>
         <button type="button" class="ptab"         data-plat="Just Eat"  onclick="setPlatformTab(this)" style="border-color:#ff8000;">Just Eat</button>
         <button type="button" class="ptab"         data-plat="Deliveroo" onclick="setPlatformTab(this)" style="border-color:#00ccbc;">Deliveroo</button>
       </div>
     </div>
-    <input type="hidden" id="dm-platform" value="all">
+    <input type="hidden" id="dm-platform" value="Uber Eats">
 
     <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--border);">Performance numbers</div>
     <div class="f-row">
@@ -292,20 +291,47 @@ function buildActions(c) {
 function openDataModalBtn(btn) { openDataModal(btn.dataset.rid, btn.dataset.rname); }
 function viewClientBtn(btn) { viewClient(btn.dataset.email); }
 function deleteClientBtn(btn) { deleteClient(btn.dataset.email); }
+// In-memory store for per-platform form data within this modal session
+var platformFormCache = {};
+var FORM_FIELDS = ['dm-orders','dm-revenue','dm-aov','dm-rating','dm-reviews','dm-unanswered',
+  'dm-total-items','dm-photo-items','dm-header-photo','dm-descriptions',
+  'dm-promotion','dm-categories','dm-featured','dm-ranking',
+  'dm-changed','dm-noticed','dm-notes'];
+
+function saveFormToCache(platform) {
+  var cached = {};
+  FORM_FIELDS.forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) cached[id] = el.value;
+  });
+  platformFormCache[platform] = cached;
+}
+
+function restoreFormFromCache(platform) {
+  var cached = platformFormCache[platform] || {};
+  FORM_FIELDS.forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = cached[id] || '';
+  });
+}
+
 function setPlatformTab(btn) {
+  // Save current platform's data before switching
+  var currentPlat = document.getElementById('dm-platform').value;
+  if (currentPlat) saveFormToCache(currentPlat);
+
+  // Switch tab
   document.querySelectorAll('.ptab').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
-  document.getElementById('dm-platform').value = btn.dataset.plat;
-  // Clear all fields when switching platform so numbers don't bleed across
-  ['dm-orders','dm-revenue','dm-aov','dm-rating','dm-reviews','dm-unanswered',
-   'dm-total-items','dm-photo-items','dm-header-photo','dm-descriptions',
-   'dm-promotion','dm-categories','dm-featured','dm-ranking',
-   'dm-changed','dm-noticed','dm-notes'].forEach(function(id){
-    var el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+  var newPlat = btn.dataset.plat;
+  document.getElementById('dm-platform').value = newPlat;
+
+  // Restore saved data for the new platform (or clear if none)
+  restoreFormFromCache(newPlat);
+
   document.getElementById('saveDataMsg').style.display = 'none';
   document.getElementById('genReportMsg').style.display = 'none';
+  var lbl = document.getElementById('genPlatLabel'); if(lbl) lbl.textContent = newPlat;
 }
 
 function openDataModal(restId, restName) {
@@ -319,6 +345,10 @@ function openDataModal(restId, restName) {
   });
   document.getElementById('saveDataMsg').style.display = 'none';
   document.getElementById('genReportMsg').style.display = 'none';
+  platformFormCache = {};
+  // Reset to first tab (Uber Eats)
+  document.querySelectorAll('.ptab').forEach(function(b,i){ b.classList.toggle('active', i===0); });
+  document.getElementById('dm-platform').value = 'Uber Eats';
   document.getElementById('dataModal').classList.add('open');
 }
 
@@ -368,6 +398,51 @@ async function saveData() {
     msg.className = 'msg err'; msg.textContent = e.message; msg.style.display = 'block';
   }
   btn.disabled = false; btn.textContent = 'Save data';
+}
+
+
+async function generateAllReports() {
+  var restId   = document.getElementById('dm-restId').value;
+  var weekEnd  = document.getElementById('dm-week').value;
+  var msg      = document.getElementById('genReportMsg');
+  var btn      = document.getElementById('genAllBtn');
+  var platforms = ['Uber Eats', 'Just Eat', 'Deliveroo'];
+
+  btn.disabled = true;
+  msg.style.display = 'none';
+
+  var results = [];
+  var hasAny  = false;
+
+  for (var i = 0; i < platforms.length; i++) {
+    var plat = platforms[i];
+    btn.textContent = 'Generating ' + plat + '...';
+
+    try {
+      var res = await fetch('/api/admin/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
+        body: JSON.stringify({ restaurantId: restId, weekEnding: weekEnd, platform: plat })
+      });
+      var d = await res.json();
+      if (d.ok) {
+        results.push('&#10003; ' + plat);
+        hasAny = true;
+      } else {
+        // No data saved for this platform — skip silently
+        results.push('&#8212; ' + plat + ' (no data)');
+      }
+    } catch(e) {
+      results.push('&#10007; ' + plat + ' (error)');
+    }
+  }
+
+  msg.className = 'msg ' + (hasAny ? 'ok' : 'err');
+  msg.innerHTML = results.join('&nbsp;&nbsp;|&nbsp;&nbsp;') + (hasAny ? '<br>Reports generated and clients emailed.' : '');
+  msg.style.display = 'block';
+  btn.textContent = '&#9889; Generate all reports';
+  btn.disabled = false;
+  if (hasAny) loadClients();
 }
 
 async function generateReport() {
