@@ -255,7 +255,8 @@ function drawChart(history, metric) {
   var labels = data.map(function(w){ return new Date(w.week_ending).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); });
   var vals   = data.map(function(w){ return Number(w[metric]||0); });
   var isCurr = metric==='revenue'||metric==='aov';
-  if (chartInst) { chartInst.destroy(); chartInst = null; }
+  if (chartInst) { try { chartInst.destroy(); } catch(e){} chartInst = null; }
+  // Small delay to let DOM settle after destroy
   chartInst = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -286,7 +287,7 @@ function drawChart(history, metric) {
 function switchMetric(btn, metric) {
   document.querySelectorAll('.chart-tab').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
-  if (dashData) drawChart(dashData.history||[], metric);
+  var h = getActiveHistory(); if (h && h.length) drawChart(h,history||[], metric);
 }
 
 // ── Build report view ─────────────────────────────────────────────────────────
@@ -302,9 +303,9 @@ function buildPlatformTabs(platforms) {
     if (realPlats.length === 1) activePlatform = realPlats[0];
     return ''; // Single platform — no tabs needed
   }
-  // Default to first real platform if 'all' is somehow active
-  if (activePlatform === 'all') activePlatform = realPlats[0];
-  var tabs = realPlats; // No 'All platforms' tab
+  // Multiple platforms — show All overview tab + individual tabs
+  if (activePlatform !== 'all' && !realPlats.includes(activePlatform)) activePlatform = realPlats[0];
+  var tabs = ['all'].concat(realPlats); // No 'All platforms' tab
   return '<div class="plat-tabs">' +
     tabs.map(function(p) {
       var color = platColors[p] || '#e8a020';
@@ -394,11 +395,17 @@ function buildReportView(data) {
       '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+sc.rating.value+'</div>'+deltaHtml(sc.rating.delta,false)+'</div>' +
     '</div>';
   } else if (week.orders) {
+    // Compute deltas from history even without AI report
+    var prevW = history[idx+1] || null;
+    var od = prevW ? Number(week.orders) - Number(prevW.orders) : 0;
+    var rd = prevW ? Number(week.revenue) - Number(prevW.revenue) : 0;
+    var ad = prevW ? Number(week.aov) - Number(prevW.aov) : 0;
+    var gd = prevW ? Number(week.rating) - Number(prevW.rating) : 0;
     metricsHtml = '<div class="metric-grid">' +
-      '<div class="metric-card"><div class="metric-label">Orders</div><div class="metric-value">'+fmt(week.orders)+'</div><div class="metric-delta flat">Logged</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+fmtGBP(week.revenue)+'</div><div class="metric-delta flat">Logged</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Avg order value</div><div class="metric-value">'+fmtGBP(week.aov)+'</div><div class="metric-delta flat">Logged</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+(week.rating||'--')+'</div><div class="metric-delta flat">Logged</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Orders</div><div class="metric-value">'+fmt(week.orders)+'</div>'+deltaHtml(od,false)+'</div>' +
+      '<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+fmtGBP(week.revenue)+'</div>'+deltaHtml(rd,true)+'</div>' +
+      '<div class="metric-card"><div class="metric-label">Avg order value</div><div class="metric-value">'+fmtGBP(week.aov)+'</div>'+deltaHtml(ad,true)+'</div>' +
+      '<div class="metric-card"><div class="metric-label">Rating</div><div class="metric-value">'+(week.rating||'--')+'</div>'+deltaHtml(gd,false)+'</div>' +
     '</div>';
   }
 
@@ -434,15 +441,76 @@ function buildReportView(data) {
     '<div><div style="font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:2px;">Your first report is being prepared</div>' +
     '<div style="font-size:13px;color:var(--amber-d);">Our team will log into your account within 48 hours and generate your first weekly report. We will email you when it is ready.</div></div></div>' : '';
 
-  document.getElementById('reportView').innerHTML =
-    platTabsHtml +
-    '<div class="dash-title">'+(rest.name||'')+'</div>' +
-    '<div class="dash-sub">'+(rest.postcode||'')+' \u00b7 '+(rest.platforms||'')+(activePlatform!=='all'?' \u00b7 '+platLabels[activePlatform]:'')+'</div>' +
-    (week.week_ending ? '<div class="dash-week">Week ending '+new Date(week.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>' : '<div style="height:8px;"></div>') +
-    noDataBanner +
-    weekSel +
-    metricsHtml +
-    chartHtml +
+  // Build task counter for all-platforms view
+  var allTasksTotal = 0, allTasksDone = 0;
+  if (activePlatform === 'all' && dashData && dashData.historyByPlatform) {
+    Object.keys(dashData.historyByPlatform).forEach(function(p) {
+      if (p === 'all') return;
+      var platHistory = dashData.historyByPlatform[p] || [];
+      var latestWeek = platHistory[0] || {};
+      var platRep = latestWeek.report_data;
+      if (platRep && platRep.thisWeekActions) {
+        var key = 'piq_chk_' + String(latestWeek.week_ending||'').replace(/[^0-9]/g,'') + '_' + p;
+        var saved = {};
+        try { saved = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
+        platRep.thisWeekActions.forEach(function(a){
+          allTasksTotal++;
+          var id = 'c' + a.replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+          if (saved[id]) allTasksDone++;
+        });
+        (platRep.longerTermActions||[]).forEach(function(a){
+          allTasksTotal++;
+          var id = 'c' + a.replace(/[^a-zA-Z0-9]/g,'').slice(0,16);
+          if (saved[id]) allTasksDone++;
+        });
+      }
+    });
+  }
+
+  var allPlatOverview = activePlatform === 'all' ? (
+    '<div class="two-col">' +
+      '<div>' +
+        (allTasksTotal > 0 ?
+          '<div class="card" style="margin-bottom:16px;">' +
+            '<div class="card-title">Tasks this week</div>' +
+            '<div class="card-sub">Across all platforms</div>' +
+            '<div style="display:flex;align-items:center;gap:16px;margin-top:8px;">' +
+              '<div style="font-family:var(--serif);font-size:40px;color:var(--amber);">'+allTasksDone+'/'+allTasksTotal+'</div>' +
+              '<div>' +
+                '<div style="font-size:13px;font-weight:600;color:var(--ink);">'+allTasksDone+' completed</div>' +
+                '<div style="font-size:12px;color:var(--muted);">'+(allTasksTotal-allTasksDone)+' remaining</div>' +
+                '<div style="margin-top:8px;height:6px;background:var(--border);border-radius:99px;overflow:hidden;width:160px;">' +
+                  '<div style="height:100%;background:var(--amber);border-radius:99px;width:'+(allTasksTotal?Math.round(allTasksDone/allTasksTotal*100):0)+'%;transition:width .6s;"></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' : '') +
+        '<div class="card">' +
+          '<div class="card-title">Platform overview</div>' +
+          '<div class="card-sub">Review each platform tab for full analysis, checklist, and recommendations</div>' +
+          '<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">' +
+            Object.keys(dashData.historyByPlatform||{}).filter(function(p){return p!=='all';}).map(function(p){
+              var col = platColors[p]||'#e8a020';
+              var lbl = platLabels[p]||p;
+              var ph = (dashData.historyByPlatform[p]||[])[0]||{};
+              return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border);">' +
+                '<div style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex-shrink:0;display:inline-block;"></span><span style="font-size:13px;font-weight:600;color:var(--ink);">'+lbl+'</span></div>' +
+                '<div style="font-size:12px;color:var(--muted);">'+(ph.orders?fmt(ph.orders)+' orders':'No data yet')+'</div>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div class="card" style="margin-top:16px;">' +
+          '<div class="card-title">Contact us</div>' +
+          '<div class="card-sub">Send us a message &mdash; we respond within a few hours</div>' +
+          '<textarea id="contactMsg" class="contact-textarea" placeholder="Ask us anything..."></textarea>' +
+          '<button class="btn-send" onclick="sendMsg()">Send message</button>' +
+          '<div id="msgStatus" style="font-size:12.5px;margin-top:6px;display:none;"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div>'+histHtml+'</div>' +
+    '</div>'
+  ) : (
     '<div class="two-col">' +
       '<div>' +
         (rep ? '<div class="card">' +
@@ -454,7 +522,7 @@ function buildReportView(data) {
           '<div class="card-sub">Tick off as you or our team complete each action</div>' +
           '<div id="chkContainer"></div>' +
         '</div>' +
-        '<div class="card">' +
+        '<div class="card" style="margin-top:16px;">' +
           '<div class="card-title">Contact us</div>' +
           '<div class="card-sub">Send us a message &mdash; we respond within a few hours</div>' +
           '<textarea id="contactMsg" class="contact-textarea" placeholder="Ask us anything about your listing, report, or account..."></textarea>' +
@@ -463,14 +531,21 @@ function buildReportView(data) {
         '</div>' +
       '</div>' +
       '<div>'+histHtml+'</div>' +
-    '</div>';
+    '</div>'
+  );
 
-  if (activePlatform === 'all') {
-    var chkEl = document.getElementById('chkContainer');
-    if (chkEl) chkEl.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;line-height:1.6;">See individual platform tabs for your weekly action checklist &mdash; each platform has its own specific recommendations.</div>';
-  } else {
-    renderChecklist('chkContainer', rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], week.week_ending, plan);
-  }
+  document.getElementById('reportView').innerHTML =
+    platTabsHtml +
+    '<div class="dash-title">'+(rest.name||'')+'</div>' +
+    '<div class="dash-sub">'+(rest.postcode||'')+' \u00b7 '+(rest.platforms||'')+(activePlatform!=='all'?' \u00b7 '+platLabels[activePlatform]:'' )+'</div>' +
+    (week.week_ending ? '<div class="dash-week">Week ending '+new Date(week.week_ending).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>' : '<div style="height:8px;"></div>') +
+    noDataBanner +
+    weekSel +
+    metricsHtml +
+    chartHtml +
+    allPlatOverview;
+
+  if (activePlatform !== 'all') renderChecklist('chkContainer', rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], week.week_ending, plan);
   if (history.length >= 1) setTimeout(function(){ drawChart(history,'orders'); }, 50);
 }
 
