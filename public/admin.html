@@ -296,6 +296,16 @@ function setPlatformTab(btn) {
   document.querySelectorAll('.ptab').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   document.getElementById('dm-platform').value = btn.dataset.plat;
+  // Clear all fields when switching platform so numbers don't bleed across
+  ['dm-orders','dm-revenue','dm-aov','dm-rating','dm-reviews','dm-unanswered',
+   'dm-total-items','dm-photo-items','dm-header-photo','dm-descriptions',
+   'dm-promotion','dm-categories','dm-featured','dm-ranking',
+   'dm-changed','dm-noticed','dm-notes'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('saveDataMsg').style.display = 'none';
+  document.getElementById('genReportMsg').style.display = 'none';
 }
 
 function openDataModal(restId, restName) {
