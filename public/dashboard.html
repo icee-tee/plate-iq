@@ -300,9 +300,11 @@ function buildPlatformTabs(platforms) {
   var realPlats = platforms.filter(function(p){ return p !== 'all'; });
   if (realPlats.length <= 1) {
     if (realPlats.length === 1) activePlatform = realPlats[0];
-    return '';
+    return ''; // Single platform — no tabs needed
   }
-  var tabs = realPlats.concat(['all']);
+  // Default to first real platform if 'all' is somehow active
+  if (activePlatform === 'all') activePlatform = realPlats[0];
+  var tabs = realPlats; // No 'All platforms' tab
   return '<div class="plat-tabs">' +
     tabs.map(function(p) {
       var color = platColors[p] || '#e8a020';
