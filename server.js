@@ -725,7 +725,7 @@ app.post('/api/admin/generate-report', requireAdmin, async (req, res) => {
     const history = await getRestaurantHistory(restaurantId, platform);
 
     // Generate AI report
-    console.log(`[admin] Generating report for ${restaurant.name} ${platform} week ${weekEnding}`);
+    console.log(`[admin] Generating report for ${restaurant.name} | platform: ${platform} | week: ${weekEnding} | data found: ${!!weekData}`);
     const reportData = await generateReport(restaurant, weekData, history, platform);
 
     // Save report
@@ -824,6 +824,32 @@ app.post('/api/contact', requireAuth, async (req, res) => {
     } catch(e) { console.warn('[contact] email failed:', e.message); }
   }
   res.json({ ok: true, emailed });
+});
+
+
+// GET /api/admin/debug/:restId — see raw DB state
+app.get('/api/admin/debug/:restId', requireAdmin, async (req, res) => {
+  if (!pgPool) return res.json({ ok: false, error: 'No DB' });
+  try {
+    const wd = await pgPool.query(
+      'SELECT id, week_ending, platform, orders, revenue FROM weekly_data WHERE restaurant_id=$1 ORDER BY week_ending DESC, platform',
+      [req.params.restId]
+    );
+    const rp = await pgPool.query(
+      'SELECT id, week_ending, platform, created_at FROM reports WHERE restaurant_id=$1 ORDER BY week_ending DESC, platform',
+      [req.params.restId]
+    );
+    // Also check column existence
+    const cols = await pgPool.query(
+      "SELECT column_name FROM information_schema.columns WHERE table_name='weekly_data' ORDER BY ordinal_position"
+    );
+    res.json({
+      ok: true,
+      columns: cols.rows.map(r => r.column_name),
+      weeklyData: wd.rows,
+      reports: rp.rows
+    });
+  } catch(e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
 // ── Page routes ───────────────────────────────────────────────────────────────
