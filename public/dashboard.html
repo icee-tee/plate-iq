@@ -309,7 +309,7 @@ function buildPlatformTabs(platforms) {
   return '<div class="plat-tabs">' +
     tabs.map(function(p) {
       var color = platColors[p] || '#e8a020';
-      return '<button class="plat-tab' + (p===activePlatform?' active':'') + '" onclick="switchPlatform(this,&quot;' + p + '&quot;)">' +
+      return '<button class="plat-tab' + (p===activePlatform?' active':'') + '" data-plat="' + p + '" onclick="switchPlatformBtn(this)">' +
         (p!=='all'?'<span class="plat-dot" style="background:'+color+';"></span>':'') +
         platLabels[p] +
       '</button>';
@@ -317,6 +317,7 @@ function buildPlatformTabs(platforms) {
   '</div>';
 }
 
+function switchPlatformBtn(btn) { switchPlatform(btn, btn.getAttribute('data-plat')); }
 function switchPlatform(btn, platform) {
   activePlatform = platform;
   document.querySelectorAll('.plat-tab').forEach(function(b){ b.classList.remove('active'); });
