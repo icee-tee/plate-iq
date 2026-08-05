@@ -402,22 +402,65 @@ async function saveData() {
 
 
 async function generateAllReports() {
-  var restId   = document.getElementById('dm-restId').value;
-  var weekEnd  = document.getElementById('dm-week').value;
-  var msg      = document.getElementById('genReportMsg');
-  var btn      = document.getElementById('genAllBtn');
-  var platforms = ['Uber Eats', 'Just Eat', 'Deliveroo'];
+  var restId  = document.getElementById('dm-restId').value;
+  var weekEnd = document.getElementById('dm-week').value;
+  var msg     = document.getElementById('genReportMsg');
+  var btn     = document.getElementById('genAllBtn');
+
+  // Save current tab's data to cache first
+  var currentPlat = document.getElementById('dm-platform').value;
+  if (currentPlat) saveFormToCache(currentPlat);
+
+  // Only generate for platforms that have cached data OR already saved data
+  var allPlatforms = ['Uber Eats', 'Just Eat', 'Deliveroo'];
+  var toGenerate = allPlatforms.filter(function(p) {
+    var cached = platformFormCache[p] || {};
+    return cached['dm-orders'] && cached['dm-orders'].trim() !== '';
+  });
+
+  if (!toGenerate.length) {
+    msg.className = 'msg err';
+    msg.textContent = 'No data saved yet. Fill in at least Orders for each platform and click Save Data first.';
+    msg.style.display = 'block';
+    return;
+  }
 
   btn.disabled = true;
   msg.style.display = 'none';
 
+  // First save all platforms that have data
+  btn.textContent = 'Saving data...';
+  for (var i = 0; i < toGenerate.length; i++) {
+    var savePlat = toGenerate[i];
+    var cached = platformFormCache[savePlat] || {};
+    if (!cached['dm-orders']) continue;
+    try {
+      await fetch('/api/admin/weekly-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPw },
+        body: JSON.stringify({
+          restaurantId: restId, weekEnding: weekEnd, platform: savePlat,
+          orders: cached['dm-orders']||'', revenue: cached['dm-revenue']||'',
+          aov: cached['dm-aov']||'', rating: cached['dm-rating']||'',
+          newReviews: cached['dm-reviews']||'0', unansweredReviews: cached['dm-unanswered']||'0',
+          totalItems: cached['dm-total-items']||'', photoItems: cached['dm-photo-items']||'',
+          headerPhoto: cached['dm-header-photo']||'', descriptions: cached['dm-descriptions']||'',
+          promotion: cached['dm-promotion']||'', categories: cached['dm-categories']||'',
+          featured: cached['dm-featured']||'', ranking: cached['dm-ranking']||'',
+          whatChanged: cached['dm-changed']||'', whatNoticed: cached['dm-noticed']||'',
+          notes: cached['dm-notes']||''
+        })
+      });
+    } catch(e) { console.warn('Save failed for '+savePlat, e); }
+  }
+
+  // Now generate reports
   var results = [];
   var hasAny  = false;
 
-  for (var i = 0; i < platforms.length; i++) {
-    var plat = platforms[i];
+  for (var j = 0; j < toGenerate.length; j++) {
+    var plat = toGenerate[j];
     btn.textContent = 'Generating ' + plat + '...';
-
     try {
       var res = await fetch('/api/admin/generate-report', {
         method: 'POST',
@@ -429,8 +472,7 @@ async function generateAllReports() {
         results.push('&#10003; ' + plat);
         hasAny = true;
       } else {
-        // No data saved for this platform — skip silently
-        results.push('&#8212; ' + plat + ' (no data)');
+        results.push('&#8212; ' + plat + ': ' + (d.error||'no data'));
       }
     } catch(e) {
       results.push('&#10007; ' + plat + ' (error)');
