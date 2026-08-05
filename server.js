@@ -76,6 +76,7 @@ async function initDb() {
       id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
       platform      TEXT NOT NULL,
+      listing_url   TEXT,
       login_email   TEXT,
       login_password TEXT,
       notes         TEXT,
@@ -121,6 +122,7 @@ async function initDb() {
   await pgPool.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS platform TEXT NOT NULL DEFAULT 'all'`).catch(()=>{});
   await pgPool.query(`ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_restaurant_id_week_ending_key`).catch(()=>{});
   await pgPool.query(`ALTER TABLE reports ADD UNIQUE (restaurant_id, week_ending, platform)`).catch(()=>{});
+  await pgPool.query(`ALTER TABLE credentials ADD COLUMN IF NOT EXISTS listing_url TEXT`).catch(()=>{});
   console.log('✅ DB ready');
 }
 initDb().catch(console.error);
@@ -586,8 +588,8 @@ app.post('/api/credentials', requireAuth, async (req, res) => {
     await pgPool.query('DELETE FROM credentials WHERE restaurant_id=$1', [restaurant.id]);
     for (const cred of (credentials || [])) {
       await pgPool.query(
-        'INSERT INTO credentials (restaurant_id, platform, login_email, login_password, notes) VALUES ($1,$2,$3,$4,$5)',
-        [restaurant.id, cred.platform, cred.login_email, cred.login_password, cred.notes || null]
+        'INSERT INTO credentials (restaurant_id, platform, listing_url, login_email, login_password, notes) VALUES ($1,$2,$3,$4,$5,$6)',
+        [restaurant.id, cred.platform, cred.listing_url||null, cred.login_email, cred.login_password, cred.notes || null]
       );
     }
     res.json({ ok: true });
