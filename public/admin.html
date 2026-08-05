@@ -103,7 +103,17 @@ tr:hover td{background:var(--bg);}
     <h3>Enter weekly data</h3>
     <div id="dataModalRestaurant" style="font-size:13px;color:var(--muted);margin-bottom:16px;"></div>
     <input type="hidden" id="dm-restId">
-    <div class="f-group"><label>Week ending (Sunday) *</label><input type="date" id="dm-week"></div>
+    <div class="f-group">
+      <label>Week ending *</label>
+      <div style="display:flex;gap:8px;">
+        <select id="dm-week-select" style="font-family:var(--sans);font-size:13.5px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r);padding:9px 12px;outline:none;flex:1;" onchange="document.getElementById('dm-week').value=this.value;">
+          <option value="">Loading existing weeks...</option>
+        </select>
+        <input type="date" id="dm-week" style="font-family:var(--sans);font-size:13.5px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border-m);border-radius:var(--r);padding:9px 12px;outline:none;width:160px;" placeholder="Or enter new date">
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">Select an existing week from the dropdown, or enter a new Sunday date manually.</div>
+    </div>
+    <div style="background:var(--amber-p);border:1px solid rgba(232,160,32,.25);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:var(--amber-d);">&#9888; Make sure the week ending date above is correct before switching platforms. All platforms must use the same week ending date.</div>
     <div class="f-group">
       <label>Platform</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;" id="platformTabs">
@@ -350,8 +360,61 @@ function openDataModal(restId, restName) {
   document.querySelectorAll('.ptab').forEach(function(b,i){ b.classList.toggle('active', i===0); });
   document.getElementById('dm-platform').value = 'Uber Eats';
   document.getElementById('dataModal').classList.add('open');
+  // Load existing weeks for this restaurant
+  loadExistingWeeks(restId);
 }
 
+
+
+function loadExistingWeeks(restId) {
+  var sel = document.getElementById('dm-week-select');
+  var inp = document.getElementById('dm-week');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Loading...</option>';
+  fetch('/api/admin/client-history/' + restId, { headers: { 'x-admin-password': adminPw } })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      // Get unique weeks from history
+      var weeks = {};
+      (d.history||[]).forEach(function(h) {
+        var we = h.week_ending ? h.week_ending.split('T')[0] : '';
+        if (we) weeks[we] = true;
+      });
+      var weekList = Object.keys(weeks).sort().reverse();
+      
+      // Add "New week" option + existing weeks
+      var opts = '<option value="">-- Select existing week or enter date below --</option>';
+      weekList.forEach(function(w) {
+        var d = new Date(w);
+        var lbl = 'w/e ' + d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+        opts += '<option value="'+w+'">'+lbl+'</option>';
+      });
+      // Add new week option (next Sunday)
+      var nextSun = new Date();
+      nextSun.setDate(nextSun.getDate() + (7 - nextSun.getDay()) % 7);
+      if (nextSun.getDay() === 0 && nextSun.toISOString().split('T')[0] !== weekList[0]) {
+        // Only add if it's actually a future Sunday
+      }
+      sel.innerHTML = opts;
+      
+      // Auto-select most recent week
+      if (weekList.length) {
+        sel.value = weekList[0];
+        inp.value = weekList[0];
+      } else {
+        // Default to last Sunday
+        var d2 = new Date();
+        d2.setDate(d2.getDate() - d2.getDay());
+        inp.value = d2.toISOString().split('T')[0];
+      }
+    })
+    .catch(function() {
+      sel.innerHTML = '<option value="">Could not load weeks</option>';
+      var d3 = new Date();
+      d3.setDate(d3.getDate() - d3.getDay());
+      inp.value = d3.toISOString().split('T')[0];
+    });
+}
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
@@ -411,19 +474,11 @@ async function generateAllReports() {
   var currentPlat = document.getElementById('dm-platform').value;
   if (currentPlat) saveFormToCache(currentPlat);
 
-  // Only generate for platforms that have cached data OR already saved data
+  // Generate for ALL platforms - if they have data in DB it will work,
+  // if not the server returns a clear error which we show
   var allPlatforms = ['Uber Eats', 'Just Eat', 'Deliveroo'];
-  var toGenerate = allPlatforms.filter(function(p) {
-    var cached = platformFormCache[p] || {};
-    return cached['dm-orders'] && cached['dm-orders'].trim() !== '';
-  });
-
-  if (!toGenerate.length) {
-    msg.className = 'msg err';
-    msg.textContent = 'No data saved yet. Fill in at least Orders for each platform and click Save Data first.';
-    msg.style.display = 'block';
-    return;
-  }
+  // Also save any cached data first
+  var toGenerate = allPlatforms;
 
   btn.disabled = true;
   msg.style.display = 'none';
@@ -433,7 +488,7 @@ async function generateAllReports() {
   for (var i = 0; i < toGenerate.length; i++) {
     var savePlat = toGenerate[i];
     var cached = platformFormCache[savePlat] || {};
-    if (!cached['dm-orders']) continue;
+    if (!cached['dm-orders'] || !cached['dm-orders'].trim()) continue; // skip if no orders cached
     try {
       await fetch('/api/admin/weekly-data', {
         method: 'POST',
@@ -469,10 +524,10 @@ async function generateAllReports() {
       });
       var d = await res.json();
       if (d.ok) {
-        results.push('&#10003; ' + plat);
+        results.push('<span style="color:var(--green)">&#10003; '+plat+'</span>');
         hasAny = true;
       } else {
-        results.push('&#8212; ' + plat + ': ' + (d.error||'no data'));
+        results.push('<span style="color:var(--red)">&#10007; '+plat+': '+(d.error||'no data')+'</span>');
       }
     } catch(e) {
       results.push('&#10007; ' + plat + ' (error)');
