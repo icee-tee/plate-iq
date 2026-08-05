@@ -208,6 +208,7 @@ function renderChecklist(containerId, thisWeek, longerTerm, weekEnding, plan) {
       try { s = JSON.parse(localStorage.getItem(key)||'{}'); } catch(e){}
       if (nowDone) s[this.id] = 1; else delete s[this.id];
       try { localStorage.setItem(key, JSON.stringify(s)); } catch(e){}
+      updateTaskCounter();
     });
     return div;
   }
@@ -340,6 +341,7 @@ function buildPlatformTabs(platforms) {
 
 function switchPlatformBtn(btn) { switchPlatform(btn, btn.getAttribute('data-plat')); }
 function switchPlatform(btn, platform) {
+  if (!platform) return;
   activePlatform = platform;
   document.querySelectorAll('.plat-tab').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
@@ -497,10 +499,10 @@ function buildReportView(data) {
             '<div class="card-title">Tasks this week</div>' +
             '<div class="card-sub">Across all platforms</div>' +
             '<div style="display:flex;align-items:center;gap:16px;margin-top:8px;">' +
-              '<div style="font-family:var(--serif);font-size:40px;color:var(--amber);">'+allTasksDone+'/'+allTasksTotal+'</div>' +
+              '<div style="font-family:var(--serif);font-size:40px;color:var(--amber);" id="allTaskTotal">'+allTasksDone+'/'+allTasksTotal+'</div>' +
               '<div>' +
-                '<div style="font-size:13px;font-weight:600;color:var(--ink);">'+allTasksDone+' completed</div>' +
-                '<div style="font-size:12px;color:var(--muted);">'+(allTasksTotal-allTasksDone)+' remaining</div>' +
+                '<div style="font-size:13px;font-weight:600;color:var(--ink);" id="allTaskDone">'+allTasksDone+' completed</div>' +
+                '<div style="font-size:12px;color:var(--muted);" id="allTaskDesc">'+(allTasksTotal-allTasksDone)+' remaining</div>' +
                 '<div style="margin-top:8px;height:6px;background:var(--border);border-radius:99px;overflow:hidden;width:160px;">' +
                   '<div style="height:100%;background:var(--amber);border-radius:99px;width:'+(allTasksTotal?Math.round(allTasksDone/allTasksTotal*100):0)+'%;transition:width .6s;"></div>' +
                 '</div>' +
@@ -515,9 +517,24 @@ function buildReportView(data) {
               var col = platColors[p]||'#e8a020';
               var lbl = platLabels[p]||p;
               var ph = (dashData.historyByPlatform[p]||[])[0]||{};
-              return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border);">' +
+              var platRep = ph.report_data;
+              var pTotal = 0, pDone = 0;
+              if (platRep) {
+                var pKey = 'piq_chk_' + String(ph.week_ending||'').replace(/[^0-9]/g,'');
+                var pSaved = {};
+                try { pSaved = JSON.parse(localStorage.getItem(pKey)||'{}'); } catch(e){}
+                ((platRep.thisWeekActions||[]).concat(platRep.longerTermActions||[])).forEach(function(a){
+                  pTotal++;
+                  if (pSaved['c'+a.replace(/[^a-zA-Z0-9]/g,'').slice(0,16)]) pDone++;
+                });
+              }
+              return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border);cursor:pointer;" onclick="switchPlatform(null,\''+p+'\')">' +
                 '<div style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex-shrink:0;display:inline-block;"></span><span style="font-size:13px;font-weight:600;color:var(--ink);">'+lbl+'</span></div>' +
-                '<div style="font-size:12px;color:var(--muted);">'+(ph.orders?fmt(ph.orders)+' orders':'No data yet')+'</div>' +
+                '<div style="display:flex;align-items:center;gap:12px;">' +
+                  (pTotal ? '<span style="font-size:11.5px;color:var(--muted);">'+pDone+'/'+pTotal+' tasks</span>' : '') +
+                  '<span style="font-size:12px;color:var(--muted);">'+(ph.orders?fmt(ph.orders)+' orders':'No data')+'</span>' +
+                  '<span style="font-size:11px;color:var(--amber-d);font-weight:600;">View →</span>' +
+                '</div>' +
               '</div>';
             }).join('') +
           '</div>' +
