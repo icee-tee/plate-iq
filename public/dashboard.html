@@ -296,11 +296,13 @@ var platColors = {'Uber Eats':'#06c167','Just Eat':'#ff8000','Deliveroo':'#00ccb
 var platLabels = {'Uber Eats':'Uber Eats','Just Eat':'Just Eat','Deliveroo':'Deliveroo','all':'All platforms'};
 
 function buildPlatformTabs(platforms) {
-  if (!platforms || platforms.length <= 1) return '';
-  // Always show All if multiple platforms
-  var tabs = platforms.includes('all') ? platforms : ['all'].concat(platforms);
-  // Remove 'all' if there's only one real platform
-  if (platforms.length === 1) tabs = platforms;
+  if (!platforms || !platforms.length) return '';
+  var realPlats = platforms.filter(function(p){ return p !== 'all'; });
+  if (realPlats.length <= 1) {
+    if (realPlats.length === 1) activePlatform = realPlats[0];
+    return '';
+  }
+  var tabs = realPlats.concat(['all']);
   return '<div class="plat-tabs">' +
     tabs.map(function(p) {
       var color = platColors[p] || '#e8a020';
@@ -324,7 +326,7 @@ function getActiveHistory() {
   if (!dashData) return [];
   var hbp = dashData.historyByPlatform || {};
   if (activePlatform === 'all') {
-    // Combine: sum orders+revenue, average aov+rating per week
+    // Combine real platforms: sum orders+revenue, average aov+rating
     var allWeeks = {};
     Object.keys(hbp).forEach(function(p) {
       if (p === 'all') return;
@@ -461,8 +463,13 @@ function buildReportView(data) {
       '<div>'+histHtml+'</div>' +
     '</div>';
 
-  renderChecklist('chkContainer', rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], week.week_ending, plan);
-  if (history.length >= 2) setTimeout(function(){ drawChart(history,'orders'); }, 50);
+  if (activePlatform === 'all') {
+    var chkEl = document.getElementById('chkContainer');
+    if (chkEl) chkEl.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;line-height:1.6;">See individual platform tabs for your weekly action checklist &mdash; each platform has its own specific recommendations.</div>';
+  } else {
+    renderChecklist('chkContainer', rep&&rep.thisWeekActions||[], rep&&rep.longerTermActions||[], week.week_ending, plan);
+  }
+  if (history.length >= 1) setTimeout(function(){ drawChart(history,'orders'); }, 50);
 }
 
 function selectWeek(i) {
