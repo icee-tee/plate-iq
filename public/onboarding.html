@@ -251,9 +251,10 @@ function toggleCredFields() {
   container.innerHTML = active.map(function(p) {
     return '<div class="platform-cred" style="margin-bottom:14px;padding:14px;background:var(--bg);border-radius:var(--r);">' +
       '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:'+p.color+';margin-bottom:10px;">'+p.name+'</div>' +
+      '<div class="f-group"><label>Your '+p.name+' listing URL</label><input type="url" id="cred-'+p.id+'-url" placeholder="Paste your '+p.name+' restaurant URL"></div>' +
       '<div class="f-row">' +
-        '<div class="f-group"><label>Login email</label><input type="email" id="cred-'+p.id+'-email" placeholder="manager@restaurant.com"></div>' +
-        '<div class="f-group"><label>Password</label><input type="password" id="cred-'+p.id+'-pwd" placeholder="Your platform password"></div>' +
+        '<div class="f-group"><label>Manager login email</label><input type="email" id="cred-'+p.id+'-email" placeholder="manager@restaurant.com"></div>' +
+        '<div class="f-group"><label>Manager password</label><input type="password" id="cred-'+p.id+'-pwd" placeholder="Your platform password"></div>' +
       '</div>' +
       '<div class="f-group"><label>Notes (optional)</label><input type="text" id="cred-'+p.id+'-notes" placeholder="e.g. restaurant ID, 2FA setup, location name"></div>' +
     '</div>';
@@ -276,7 +277,14 @@ async function submitOnboarding() {
     [['ue','Uber Eats'],['je','Just Eat'],['de','Deliveroo']].forEach(function(pair) {
       var el = document.getElementById('cred-'+pair[0]+'-email');
       if (!el) return;
-      credList.push({platform:pair[1], login_email:el.value.trim(), login_password:document.getElementById('cred-'+pair[0]+'-pwd').value, notes:document.getElementById('cred-'+pair[0]+'-notes').value.trim()});
+      var urlEl = document.getElementById('cred-'+pair[0]+'-url');
+      credList.push({
+        platform: pair[1],
+        listing_url: urlEl ? urlEl.value.trim() : '',
+        login_email: el.value.trim(),
+        login_password: document.getElementById('cred-'+pair[0]+'-pwd').value,
+        notes: document.getElementById('cred-'+pair[0]+'-notes').value.trim()
+      });
     });
     await fetch('/api/credentials', {method:'POST', headers:{'Content-Type':'application/json','x-session-token':token}, body:JSON.stringify({credentials:credList})});
     if (selectedPlan) {
